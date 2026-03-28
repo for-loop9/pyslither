@@ -1,0 +1,9 @@
+.venv/
+build/
+__pycache__/
+*.egg-info/
+*.so
+*.pyd
+*.zip
+*.pyi
+model/
