@@ -74,8 +74,8 @@ PYBIND11_MODULE(_core, m) {
 
       .def("reset", &env_reset, "Reset the environment.")
       .def("tick", &env_tick, py::arg("dtms"),
-           "Advance the simulation one step. `dtms` is elapsed time normalized "
-           "to " TOSTRING(MS_PER_TICK) " ms.")
+           "Advance the simulation one step. `dtms` is elapsed time **normalized "
+           "to " TOSTRING(MS_PER_TICK) " ms**.")
       .def("new_snake", &env_new_snake, py::arg("x"), py::arg("y"),
            "Spawn a snake at (`x`, `y`). Returns `False` if the position is "
            "outside the spawn radius, occupied, or the max snake count is "

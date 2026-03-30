@@ -172,7 +172,7 @@ class Simulation:
         """
     def tick(self, dtms: typing.SupportsFloat | typing.SupportsIndex) -> None:
         """
-        Advance the simulation one step. `dtms` is elapsed time normalized to 8 ms.
+        Advance the simulation one step. `dtms` is elapsed time **normalized to 8 ms**.
         """
     @property
     def config(self) -> Config:
