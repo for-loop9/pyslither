@@ -14,7 +14,7 @@ extern "C" {
 
 namespace py = pybind11;
 
-PYBIND11_MODULE(pyslither, m) {
+PYBIND11_MODULE(_core, m) {
   m.doc() =
       "pyslither: Python bindings for the Slither.io-style simulation "
       "environment.";
@@ -72,7 +72,7 @@ PYBIND11_MODULE(pyslither, m) {
       .def("reset", &env_reset, "Reset the environment.")
       .def("tick", &env_tick, py::arg("dtms"), py::arg("ctm"),
            "Advance the simulation one step. `dtms` is elapsed time normalized "
-           "to " TOSTRING(MS_PER_TICK) " ms (pass 1.0 for real-time). `ctm` is the current time in ms.")
+           "to " TOSTRING(MS_PER_TICK) " ms. `ctm` is the current time in ms.")
       .def("new_snake", &env_new_snake, py::arg("x"), py::arg("y"),
            "Spawn a snake at (`x`, `y`). Returns `False` if the position is outside the spawn radius, occupied, or the max snake count is reached.")
       .def("new_food", &env_new_food,
@@ -88,8 +88,8 @@ PYBIND11_MODULE(pyslither, m) {
            "Enable or disable boosting for snake `i`.")
 
       .def_property_readonly("num_snakes",
-                             [](env* e) { return tdarray_length(e->snake.t); },    
-                             "Total number snakes including those that died this tick.")
+                             [](env* e) { return tdarray_length(e->snake.t) - _tdarray_length(e->csnake.dead); },    
+                             "Total number of snakes alive.")
       .def("get_snake_head_x",
            [](env* e, int i) { return SPOS_X(e->snake, i); },
            py::arg("i"), "X coordinate of snake `i`'s head.")

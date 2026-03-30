@@ -5,5 +5,4 @@ __pycache__/
 *.so
 *.pyd
 *.zip
-*.pyi
 model/

@@ -2,8 +2,22 @@
 requires = [
     "setuptools",
     "wheel",
-    "pybind11",
-    "pybind11-stubgen",
-    "numpy"
+    "pybind11"
 ]
 build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyslither"
+version = "0.1.0"
+dependencies = ["numpy"]
+
+[project.optional-dependencies]
+single_player = ["raylib"]
+foodnet = ["raylib", "stable-baselines3", "gymnasium"]
+examples = ["raylib", "stable-baselines3", "gymnasium"]
+
+[tool.setuptools.packages.find]
+include = ["pyslither*"]
+
+[tool.setuptools.package-data]
+pyslither = ["*.pyi", "py.typed"]

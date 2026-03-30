@@ -1,0 +1,214 @@
+"""
+pyslither: Python bindings for the Slither.io-style simulation environment.
+"""
+from __future__ import annotations
+import numpy
+import numpy.typing
+import typing
+__all__: list[str] = ['Config', 'MS_PER_TICK', 'Simulation']
+class Config:
+    """
+    Simulation configuration. Set via Simulation constructor.
+    """
+    @property
+    def base_speed(self) -> float:
+        ...
+    @property
+    def max_parts(self) -> int:
+        ...
+    @property
+    def max_snakes(self) -> int:
+        ...
+    @property
+    def max_speed(self) -> float:
+        ...
+    @property
+    def mouth_radius_ratio(self) -> int:
+        ...
+    @property
+    def mouth_speed_ratio(self) -> float:
+        ...
+    @property
+    def radius(self) -> float:
+        ...
+    @property
+    def segment_length(self) -> int:
+        ...
+    @property
+    def speed_thickness_ratio(self) -> float:
+        ...
+    @property
+    def tail_stiffness_ratio(self) -> float:
+        ...
+    @property
+    def turn_speed(self) -> float:
+        ...
+class Simulation:
+    def __init__(self, radius: typing.SupportsFloat | typing.SupportsIndex = 5000.0, base_speed: typing.SupportsFloat | typing.SupportsIndex = 5.389999866485596, speed_thickness_ratio: typing.SupportsFloat | typing.SupportsIndex = 0.4000000059604645, max_speed: typing.SupportsFloat | typing.SupportsIndex = 14.0, turn_speed: typing.SupportsFloat | typing.SupportsIndex = 0.032999999821186066, tail_stiffness_ratio: typing.SupportsFloat | typing.SupportsIndex = 0.4300000071525574, mouth_speed_ratio: typing.SupportsFloat | typing.SupportsIndex = 0.20800000429153442, mouth_radius_ratio: typing.SupportsFloat | typing.SupportsIndex = 40.0, segment_length: typing.SupportsInt | typing.SupportsIndex = 42, max_parts: typing.SupportsInt | typing.SupportsIndex = 450, max_snakes: typing.SupportsInt | typing.SupportsIndex = 32) -> None:
+        ...
+    @typing.overload
+    def get_food_cell(self, x: typing.SupportsFloat | typing.SupportsIndex, y: typing.SupportsFloat | typing.SupportsIndex) -> memoryview:
+        """
+        Food indices in the food collision grid cell that contains world position (`x`, `y`).
+        """
+    @typing.overload
+    def get_food_cell(self, i: typing.SupportsInt | typing.SupportsIndex) -> memoryview:
+        """
+        Food indices in food collision grid cell `i`.
+        """
+    def get_food_value_array(self) -> numpy.typing.NDArray[numpy.float32]:
+        """
+        Values of all foods.
+        """
+    def get_food_x_array(self) -> numpy.typing.NDArray[numpy.float32]:
+        """
+        X coordinates of all foods.
+        """
+    def get_food_y_array(self) -> numpy.typing.NDArray[numpy.float32]:
+        """
+        Y coordinates of all foods.
+        """
+    @typing.overload
+    def get_segment_cell(self, x: typing.SupportsFloat | typing.SupportsIndex, y: typing.SupportsFloat | typing.SupportsIndex) -> memoryview:
+        """
+        Segment indices in the collision grid cell that contains world position (`x`, `y`).
+        """
+    @typing.overload
+    def get_segment_cell(self, i: typing.SupportsInt | typing.SupportsIndex) -> memoryview:
+        """
+        Segment indices in collision grid cell `i`.
+        """
+    def get_segment_snake_idx(self, i: typing.SupportsInt | typing.SupportsIndex) -> int:
+        """
+        Index of the snake that owns segment `i`.
+        """
+    def get_segment_x0(self, i: typing.SupportsInt | typing.SupportsIndex) -> float:
+        """
+        Start X of collision segment `i`.
+        """
+    def get_segment_x1(self, i: typing.SupportsInt | typing.SupportsIndex) -> float:
+        """
+        End X of collision segment `i`.
+        """
+    def get_segment_y0(self, i: typing.SupportsInt | typing.SupportsIndex) -> float:
+        """
+        Start Y of collision segment `i`.
+        """
+    def get_segment_y1(self, i: typing.SupportsInt | typing.SupportsIndex) -> float:
+        """
+        End Y of collision segment `i`.
+        """
+    def get_snake_angle_array(self) -> numpy.typing.NDArray[numpy.float32]:
+        """
+        Current angles (radians) for all snakes.
+        """
+    def get_snake_dead_array(self) -> memoryview:
+        """
+        Death flags of all snakes (`1` = died this tick).
+        """
+    def get_snake_head_x(self, i: typing.SupportsInt | typing.SupportsIndex) -> float:
+        """
+        X coordinate of snake `i`'s head.
+        """
+    def get_snake_head_y(self, i: typing.SupportsInt | typing.SupportsIndex) -> float:
+        """
+        Y coordinate of snake `i`'s head.
+        """
+    def get_snake_id_array(self) -> memoryview:
+        """
+        Unique IDs of all snakes.
+        """
+    def get_snake_kill_count_array(self) -> numpy.typing.NDArray[numpy.int32]:
+        """
+        Kill counts of all snakes.
+        """
+    def get_snake_length(self, i: typing.SupportsInt | typing.SupportsIndex) -> float:
+        """
+        Effective length of snake `i` (number of parts + fractional growth).
+        """
+    def get_snake_num_parts_array(self) -> memoryview:
+        """
+        Part counts of all snakes.
+        """
+    def get_snake_part_x(self, i: typing.SupportsInt | typing.SupportsIndex, j: typing.SupportsInt | typing.SupportsIndex) -> float:
+        """
+        X coordinate of body part `j` of snake `i`.
+        """
+    def get_snake_part_y(self, i: typing.SupportsInt | typing.SupportsIndex, j: typing.SupportsInt | typing.SupportsIndex) -> float:
+        """
+        Y coordinate of body part `j` of snake `i`.
+        """
+    def get_snake_radius_array(self) -> numpy.typing.NDArray[numpy.float32]:
+        """
+        Collision radii of all snakes.
+        """
+    def get_snake_speed_array(self) -> numpy.typing.NDArray[numpy.float32]:
+        """
+        Speeds of all snakes.
+        """
+    def get_snake_target_angle_array(self) -> numpy.typing.NDArray[numpy.float32]:
+        """
+        Target angles for all snakes.
+        """
+    def new_food(self, x: typing.SupportsFloat | typing.SupportsIndex, y: typing.SupportsFloat | typing.SupportsIndex, value: typing.SupportsFloat | typing.SupportsIndex) -> bool:
+        """
+        Place food at (`x`, `y`) with the given value. Returns `False` if outside the safe radius.
+        """
+    def new_snake(self, x: typing.SupportsFloat | typing.SupportsIndex, y: typing.SupportsFloat | typing.SupportsIndex) -> bool:
+        """
+        Spawn a snake at (`x`, `y`). Returns `False` if the position is outside the spawn radius, occupied, or the max snake count is reached.
+        """
+    def reset(self) -> None:
+        """
+        Reset the environment.
+        """
+    def set_snake_boost(self, boost: bool, i: typing.SupportsInt | typing.SupportsIndex) -> None:
+        """
+        Enable or disable boosting for snake `i`.
+        """
+    def set_snake_target_angle(self, angle: typing.SupportsFloat | typing.SupportsIndex, i: typing.SupportsInt | typing.SupportsIndex) -> None:
+        """
+        Set the desired heading for snake `i` in radians (`0` to `2pi`).
+        """
+    def tick(self, dtms: typing.SupportsFloat | typing.SupportsIndex, ctm: typing.SupportsFloat | typing.SupportsIndex) -> None:
+        """
+        Advance the simulation one step. `dtms` is elapsed time normalized to 8 ms. `ctm` is the current time in ms.
+        """
+    @property
+    def config(self) -> Config:
+        ...
+    @property
+    def food_cell_size(self) -> int:
+        ...
+    @property
+    def food_grid_size(self) -> int:
+        ...
+    @property
+    def inv_food_cell_size(self) -> float:
+        ...
+    @property
+    def inv_segment_cell_size(self) -> float:
+        ...
+    @property
+    def num_food(self) -> int:
+        """
+        Number of foods currently in the world.
+        """
+    @property
+    def num_snakes(self) -> int:
+        """
+        Total number of snakes alive.
+        """
+    @property
+    def safe_radius(self) -> float:
+        ...
+    @property
+    def segment_cell_size(self) -> int:
+        ...
+    @property
+    def segment_grid_size(self) -> int:
+        ...
+    @property
+    def spawn_radius(self) -> float:
+        ...
+MS_PER_TICK: int = 8

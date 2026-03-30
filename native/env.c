@@ -669,7 +669,7 @@ void env_tick(env* e, float dtms, double ctm) {
 }
 
 bool env_new_snake(env* e, float x, float y) {
-  int i = tdarray_length(e->snake.t);
+  int i = tdarray_length(e->snake.t) - _tdarray_length(e->csnake.dead);
   if (i == e->cfg.msn) return false;
 
   float cx = e->cfg.rad;
