@@ -2,6 +2,7 @@ import pyray as rl
 from agent import *
 from pathlib import Path
 from stable_baselines3 import PPO
+import pyslither
 
 HERE = Path(__file__).parent
 WW = 768
@@ -111,8 +112,8 @@ while not rl.window_should_close():
 
     time_alive += dt
 
-    dt_8ms = (dt * 1000) / 8
-    sim.tick(dt_8ms, ctm)
+    dtms = (dt * 1000) / pyslither.MS_PER_TICK
+    sim.tick(dtms)
 
     deads = sim.get_snake_dead_array()
     if deads[SNAKE_IDX]:

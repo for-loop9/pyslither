@@ -75,7 +75,7 @@ class SlitherEnv(gym.Env):
 
     def step(self, action):
         set_action(self.sim, action)
-        self.sim.tick(1.0, self._step * pyslither.MS_PER_TICK)
+        self.sim.tick(1.0)
         self._step += 1
 
         obs = get_observation(self.sim)

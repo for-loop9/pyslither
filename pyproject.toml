@@ -13,8 +13,8 @@ dependencies = ["numpy"]
 
 [project.optional-dependencies]
 single_player = ["raylib"]
-foodnet = ["raylib", "stable-baselines3", "gymnasium"]
-examples = ["raylib", "stable-baselines3", "gymnasium"]
+foodnet = ["raylib", "rich", "stable-baselines3[extras]", "gymnasium"]
+examples = ["raylib", "rich", "stable-baselines3[extras]", "gymnasium"]
 
 [tool.setuptools.packages.find]
 include = ["pyslither*"]

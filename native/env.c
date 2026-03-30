@@ -190,15 +190,15 @@ void env_destroy(env* e) {
   tdarray_destroy(e->cfood.cgrd);
 }
 
-static inline void env_tick_movement(env* e, float dtms, double ctm) {
+static inline void env_tick_movement(env* e, float dtms) {
   for (int i = tdarray_length(e->snake.t) - 1; i >= 0; i--) {
     if (!e->snake.dead[i]) {
       float* px = e->snake.px[i] + 1;
       float* py = e->snake.py[i] + 1;
 
       if (e->snake.b[i]) {
-        if (ctm - e->snake.ldtm[i] > DRAIN_RATE) {
-          e->snake.ldtm[i] = ctm;
+        if (e->ctm - e->snake.ldtm[i] > DRAIN_RATE) {
+          e->snake.ldtm[i] = e->ctm;
           if (e->snake.np[i] > 2 || e->snake.g[i] >= 0.14f) {
             int ldx = (e->snake.hi[i] - (e->snake.np[i] - 1)) & MAX_PARTS_MASK;
             env_new_food(e, px[ldx], py[ldx], 4);
@@ -661,11 +661,13 @@ void env_reset(env* e) {
   tdarray_clear(e->csnake.dead);
 
   e->dat.cid = 0;
+  e->ctm = 0;
 }
 
-void env_tick(env* e, float dtms, double ctm) {
-  env_tick_movement(e, dtms, ctm);
+void env_tick(env* e, float dtms) {
+  env_tick_movement(e, dtms);
   env_tick_collision(e);
+  e->ctm += dtms * MS_PER_TICK;
 }
 
 bool env_new_snake(env* e, float x, float y) {

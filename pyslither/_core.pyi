@@ -100,7 +100,7 @@ class Simulation:
         """
     def get_snake_angle_array(self) -> numpy.typing.NDArray[numpy.float32]:
         """
-        Current angles (radians) for all snakes.
+        Current angles (radians) of all snakes.
         """
     def get_snake_dead_array(self) -> memoryview:
         """
@@ -148,7 +148,7 @@ class Simulation:
         """
     def get_snake_target_angle_array(self) -> numpy.typing.NDArray[numpy.float32]:
         """
-        Target angles for all snakes.
+        Target angles of all snakes.
         """
     def new_food(self, x: typing.SupportsFloat | typing.SupportsIndex, y: typing.SupportsFloat | typing.SupportsIndex, value: typing.SupportsFloat | typing.SupportsIndex) -> bool:
         """
@@ -170,9 +170,9 @@ class Simulation:
         """
         Set the desired heading for snake `i` in radians (`0` to `2pi`).
         """
-    def tick(self, dtms: typing.SupportsFloat | typing.SupportsIndex, ctm: typing.SupportsFloat | typing.SupportsIndex) -> None:
+    def tick(self, dtms: typing.SupportsFloat | typing.SupportsIndex) -> None:
         """
-        Advance the simulation one step. `dtms` is elapsed time normalized to 8 ms. `ctm` is the current time in ms.
+        Advance the simulation one step. `dtms` is elapsed time normalized to 8 ms.
         """
     @property
     def config(self) -> Config:

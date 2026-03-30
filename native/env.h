@@ -117,12 +117,14 @@ typedef struct env {
     float* v;
     int* ci;
   } food;
+
+  double ctm;
 } env;
 
 bool env_init(env* e);
 void env_destroy(env* e);
 void env_reset(env* e);
-void env_tick(env* e, float dtms, double ctm);
+void env_tick(env* e, float dtms);
 bool env_new_snake(env* e, float x, float y);
 bool env_new_food(env* e, float x, float y, float v);
 

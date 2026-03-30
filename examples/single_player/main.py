@@ -5,8 +5,8 @@ from pathlib import Path
 import random
 import math
 
-WW = 1920
-WH = 1080
+WW = 768
+WH = 432
 MY_SNAKE = 0
 HERE = Path(__file__).parent
 
@@ -103,8 +103,8 @@ while not rl.window_should_close():
             if d2 > sr * sr:
                 sim.set_snake_target_angle(math.atan2(dy, dx), i)
 
-    dt_8ms = (rl.get_frame_time() * 1000) / 8
-    sim.tick(dt_8ms, rl.get_time() * 1000)
+    dtms = (rl.get_frame_time() * 1000) / pyslither.MS_PER_TICK
+    sim.tick(dtms)
 
     if sim.get_snake_dead_array()[MY_SNAKE]:
         restart(sim)
