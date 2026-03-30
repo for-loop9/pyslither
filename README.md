@@ -1,7 +1,9 @@
 <p align="left">
   <img src="gallery/pyslither.svg" alt="pyslither logo" width="256"/>
 </p>
+
 ---
+
 **Pyslither** is a high-performance native-backed simulation environment inspired by *Slither.io*, built primarily for **reinforcement learning** research and education. The core is written in C and conveniently exposed to Python. This means you get **NumPy-compatible** state arrays, a clean Python API, and the performance to run thousands of ticks per second without Python ever becoming the bottleneck.
 
 Snakes move, boost, collide, eat food, and die - all simulated at a timestep you control. Multiple snakes can coexist in the same environment, making **pyslither** suitable for single-agent, multi-agent, and self-play training setups alike.
