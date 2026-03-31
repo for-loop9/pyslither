@@ -1,4 +1,4 @@
-<p align="left">
+<p align="center">
   <img src="gallery/pyslither.svg" alt="pyslither logo" width="256"/>
 </p>
 
@@ -36,7 +36,9 @@ print(f"total snakes = {sim.num_snakes}")
 print(f"total food = {sim.num_food}")
 ```
 ---
-![alt text](gallery/showcase.png)
+<p align="center">
+  <img src="gallery/showcase.svg" alt="showcase" width="1600"/>
+</p>
 
 ## License
 This project is licensed under the **MIT License** - see [LICENSE](./LICENSE) for details.
