@@ -1,5 +1,5 @@
 """
-pyslither: Python bindings for the Slither.io-style simulation environment.
+Python bindings for the Slither.io-style simulation environment.
 """
 from __future__ import annotations
 import numpy
@@ -23,10 +23,10 @@ class Config:
     def max_speed(self) -> float:
         ...
     @property
-    def mouth_radius_ratio(self) -> int:
+    def mouth_radius(self) -> int:
         ...
     @property
-    def mouth_speed_ratio(self) -> float:
+    def mouth_speed(self) -> float:
         ...
     @property
     def radius(self) -> float:
@@ -35,16 +35,16 @@ class Config:
     def segment_length(self) -> int:
         ...
     @property
-    def speed_thickness_ratio(self) -> float:
+    def speed_thickness(self) -> float:
         ...
     @property
-    def tail_stiffness_ratio(self) -> float:
+    def tail_stiffness(self) -> float:
         ...
     @property
     def turn_speed(self) -> float:
         ...
 class Simulation:
-    def __init__(self, radius: typing.SupportsFloat | typing.SupportsIndex = 5000.0, base_speed: typing.SupportsFloat | typing.SupportsIndex = 5.389999866485596, speed_thickness_ratio: typing.SupportsFloat | typing.SupportsIndex = 0.4000000059604645, max_speed: typing.SupportsFloat | typing.SupportsIndex = 14.0, turn_speed: typing.SupportsFloat | typing.SupportsIndex = 0.032999999821186066, tail_stiffness_ratio: typing.SupportsFloat | typing.SupportsIndex = 0.4300000071525574, mouth_speed_ratio: typing.SupportsFloat | typing.SupportsIndex = 0.20800000429153442, mouth_radius_ratio: typing.SupportsFloat | typing.SupportsIndex = 40.0, segment_length: typing.SupportsInt | typing.SupportsIndex = 42, max_parts: typing.SupportsInt | typing.SupportsIndex = 450, max_snakes: typing.SupportsInt | typing.SupportsIndex = 32) -> None:
+    def __init__(self, radius: typing.SupportsFloat | typing.SupportsIndex = 5000.0, base_speed: typing.SupportsFloat | typing.SupportsIndex = 5.389999866485596, speed_thickness: typing.SupportsFloat | typing.SupportsIndex = 0.4000000059604645, max_speed: typing.SupportsFloat | typing.SupportsIndex = 14.0, turn_speed: typing.SupportsFloat | typing.SupportsIndex = 0.032999999821186066, tail_stiffness: typing.SupportsFloat | typing.SupportsIndex = 0.4300000071525574, mouth_speed: typing.SupportsFloat | typing.SupportsIndex = 0.20800000429153442, mouth_radius: typing.SupportsFloat | typing.SupportsIndex = 40.0, segment_length: typing.SupportsInt | typing.SupportsIndex = 42, max_parts: typing.SupportsInt | typing.SupportsIndex = 450, max_snakes: typing.SupportsInt | typing.SupportsIndex = 32) -> None:
         ...
     @typing.overload
     def get_food_cell(self, x: typing.SupportsFloat | typing.SupportsIndex, y: typing.SupportsFloat | typing.SupportsIndex) -> memoryview:

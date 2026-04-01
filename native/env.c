@@ -194,6 +194,8 @@ void env_destroy(env* e) {
   tdarray_destroy(e->snake.py);
   tdarray_destroy(e->snake.id);
 
+  tdarray_destroy(e->dat.ids);
+
   int cells = e->csnake.gsz * e->csnake.gsz;
 
   for (int i = 0; i < cells; i++) {

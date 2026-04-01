@@ -1,5 +1,5 @@
 """
-pyslither: Python bindings for the Slither.io-style simulation environment.
+Python bindings for the Slither.io-style simulation environment.
 """
 from __future__ import annotations
 from pyslither._core import Config

@@ -14,30 +14,36 @@ extern "C" {
 
 namespace py = pybind11;
 
+struct EnvDeleter {
+  void operator()(env* e) const { env_destroy(e); }
+};
+
+using env_ptr = std::unique_ptr<env, EnvDeleter>;
+
 PYBIND11_MODULE(_core, m) {
   m.doc() =
-      "pyslither: Python bindings for the Slither.io-style simulation "
+      "Python bindings for the Slither.io-style simulation "
       "environment.";
 
   py::class_<env::env_cfg>(
       m, "Config", "Simulation configuration. Set via Simulation constructor.")
       .def_readonly("radius", &env::env_cfg::rad)
       .def_readonly("base_speed", &env::env_cfg::bs)
-      .def_readonly("speed_thickness_ratio", &env::env_cfg::str)
+      .def_readonly("speed_thickness", &env::env_cfg::str)
       .def_readonly("max_speed", &env::env_cfg::ms)
       .def_readonly("turn_speed", &env::env_cfg::ts)
-      .def_readonly("tail_stiffness_ratio", &env::env_cfg::tsr)
-      .def_readonly("mouth_speed_ratio", &env::env_cfg::msr)
-      .def_readonly("mouth_radius_ratio", &env::env_cfg::mrr)
+      .def_readonly("tail_stiffness", &env::env_cfg::tsr)
+      .def_readonly("mouth_speed", &env::env_cfg::msr)
+      .def_readonly("mouth_radius", &env::env_cfg::mrr)
       .def_readonly("segment_length", &env::env_cfg::sl)
       .def_readonly("max_parts", &env::env_cfg::mp)
       .def_readonly("max_snakes", &env::env_cfg::msn);
 
-  py::class_<env>(m, "Simulation")
+  py::class_<env, env_ptr>(m, "Simulation")
       .def(py::init([](float rad, float bs, float str, float ms, float ts,
                        float tsr, float msr, float mrr, int sl, int mp,
                        int msn) {
-             env* e = new env();
+             auto e = env_ptr(new env());
 
              e->cfg.rad = rad;
              e->cfg.bs = bs;
@@ -51,7 +57,7 @@ PYBIND11_MODULE(_core, m) {
              e->cfg.mp = mp;
              e->cfg.msn = msn;
 
-             if (!env_init(e)) {
+             if (!env_init(e.get())) {
                printf(
                    "Environment initialization failed: number of maximum parts "
                    "exceeds %d.\n",
@@ -62,11 +68,9 @@ PYBIND11_MODULE(_core, m) {
              return e;
            }),
            py::arg("radius") = 5000.0f, py::arg("base_speed") = 5.39f,
-           py::arg("speed_thickness_ratio") = 0.4f,
-           py::arg("max_speed") = 14.0f, py::arg("turn_speed") = 0.033f,
-           py::arg("tail_stiffness_ratio") = 0.43f,
-           py::arg("mouth_speed_ratio") = 0.208f,
-           py::arg("mouth_radius_ratio") = 40.0f,
+           py::arg("speed_thickness") = 0.4f, py::arg("max_speed") = 14.0f,
+           py::arg("turn_speed") = 0.033f, py::arg("tail_stiffness") = 0.43f,
+           py::arg("mouth_speed") = 0.208f, py::arg("mouth_radius") = 40.0f,
            py::arg("segment_length") = 42, py::arg("max_parts") = 450,
            py::arg("max_snakes") = 32)
 
