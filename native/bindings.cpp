@@ -74,10 +74,13 @@ PYBIND11_MODULE(_core, m) {
 
       .def("reset", &env_reset, "Reset the environment.")
       .def("tick", &env_tick, py::arg("dtms"),
-           "Advance the simulation one step. `dtms` is elapsed time **normalized "
+           "Advance the simulation one step. `dtms` is elapsed time "
+           "**normalized "
            "to " TOSTRING(MS_PER_TICK) " ms**.")
       .def("new_snake", &env_new_snake, py::arg("x"), py::arg("y"),
-           "Spawn a snake at (`x`, `y`). Returns `False` if the position is "
+           py::arg("angle"),
+           "Spawn a snake at (`x`, `y`) with `angle` in radians (`0` to "
+           "`2pi`). Returns `False` if the position is "
            "outside the spawn radius, occupied, or the max snake count is "
            "reached.")
       .def("new_food", &env_new_food, py::arg("x"), py::arg("y"),
@@ -121,22 +124,22 @@ PYBIND11_MODULE(_core, m) {
           },
           py::arg("i"), py::arg("j"),
           "Y coordinate of body part `j` of snake `i`.")
-      .def(
-          "get_snake_angle_array",
+      .def_property_readonly(
+          "snake_angles",
           [](env* e) {
             float* ptr = e->snake.ang;
             return py::array_t<float>(tdarray_length(ptr), ptr);
           },
           "Current angles (radians) of all snakes.")
-      .def(
-          "get_snake_target_angle_array",
+      .def_property_readonly(
+          "snake_target_angles",
           [](env* e) {
             float* ptr = e->snake.tang;
             return py::array_t<float>(tdarray_length(ptr), ptr);
           },
           "Target angles of all snakes.")
-      .def(
-          "get_snake_speed_array",
+      .def_property_readonly(
+          "snake_speeds",
           [](env* e) {
             float* ptr = e->snake.sp;
             return py::array_t<float>(tdarray_length(ptr), ptr);
@@ -148,8 +151,8 @@ PYBIND11_MODULE(_core, m) {
           py::arg("i"),
           "Effective length of snake `i` (number of parts + fractional "
           "growth).")
-      .def(
-          "get_snake_id_array",
+      .def_property_readonly(
+          "snake_ids",
           [](env* e) {
             int* ptr = e->snake.id;
             ssize_t n = tdarray_length(ptr);
@@ -158,15 +161,15 @@ PYBIND11_MODULE(_core, m) {
                 {sizeof(int)}, true);
           },
           "Unique IDs of all snakes.")
-      .def(
-          "get_snake_kill_count_array",
+      .def_property_readonly(
+          "snake_kill_counts",
           [](env* e) {
             int* ptr = e->snake.kc;
             return py::array_t<int>(tdarray_length(ptr), ptr);
           },
           "Kill counts of all snakes.")
-      .def(
-          "get_snake_num_parts_array",
+      .def_property_readonly(
+          "snake_part_counts",
           [](env* e) {
             int* ptr = e->snake.np;
             ssize_t n = tdarray_length(ptr);
@@ -175,8 +178,8 @@ PYBIND11_MODULE(_core, m) {
                 {sizeof(int)}, true);
           },
           "Part counts of all snakes.")
-      .def(
-          "get_snake_dead_array",
+      .def_property_readonly(
+          "snake_dead_flags",
           [](env* e) {
             int* ptr = e->snake.dead;
             ssize_t n = tdarray_length(ptr);
@@ -184,9 +187,9 @@ PYBIND11_MODULE(_core, m) {
                 ptr, sizeof(int), py::format_descriptor<int>::value, {n},
                 {sizeof(int)}, true);
           },
-          "Death flags of all snakes (`1` = died this tick).")
-      .def(
-          "get_snake_radius_array",
+          "Dead flags of all snakes (`1` = died this tick).")
+      .def_property_readonly(
+          "snake_radii",
           [](env* e) {
             float* ptr = e->snake.rad;
             return py::array_t<float>(tdarray_length(ptr), ptr);
@@ -196,23 +199,23 @@ PYBIND11_MODULE(_core, m) {
       .def_property_readonly(
           "num_food", [](env* e) { return tdarray_length(e->food.x); },
           "Number of foods currently in the world.")
-      .def(
-          "get_food_x_array",
+      .def_property_readonly(
+          "food_xs",
           [](env* e) {
             float* ptr = e->food.x;
             return py::array_t<float>(tdarray_length(ptr), ptr);
           },
           "X coordinates of all foods.")
 
-      .def(
-          "get_food_y_array",
+      .def_property_readonly(
+          "food_ys",
           [](env* e) {
             float* ptr = e->food.y;
             return py::array_t<float>(tdarray_length(ptr), ptr);
           },
           "Y coordinates of all foods.")
-      .def(
-          "get_food_value_array",
+      .def_property_readonly(
+          "food_values",
           [](env* e) {
             float* ptr = e->food.v;
             return py::array_t<float>(tdarray_length(ptr), ptr);

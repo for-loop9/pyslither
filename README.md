@@ -19,18 +19,18 @@ pip install -e ".[examples]"
 import pyslither
 
 sim = pyslither.Simulation()
-sim.new_snake(x, y)
+sim.new_snake(x, y, angle)
 sim.new_food(fx, fy, value)
 
 for i in range(0, 2048):
     sim.tick(1.0)
 
-    for i, (dead, angle) in enumerate(zip(sim.get_snake_dead_array(), sim.get_snake_angle_array())):
+    for i, (dead, angle) in enumerate(zip(sim.snake_dead_flags, sim.snake_angles)):
         if dead:
-          continue
+            continue
 
-        sim.set_snake_target_angle((angle + random.random()) % (numpy.pi * 2), i)
-        sim.set_snake_boost(random.choice([True, False]), i)
+        sim.set_snake_target_angle((angle + np.random.random()) % (np.pi * 2), i)
+        sim.set_snake_boost(np.random.choice([True, False]), i)
 
 print(f"total snakes = {sim.num_snakes}")
 print(f"total food = {sim.num_food}")

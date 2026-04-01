@@ -8,18 +8,19 @@ HERE = Path(__file__).parent
 WW = 768
 WH = 432
 
+
 def draw_obs(sim: Simulation):
     hx = sim.get_snake_head_x(SNAKE_IDX)
     hy = sim.get_snake_head_y(SNAKE_IDX)
-    angles = sim.get_snake_angle_array()
+    angles = sim.snake_angles
     heading = angles[SNAKE_IDX]
 
     rl.draw_circle_lines(int(hx), int(hy), VIEW_RADIUS, (100, 125, 111, 70))
     rl.draw_poly(
-        (hx + math.cos(heading) * (sr * 2), hy + math.sin(heading) * (sr * 2)),
+        (hx + np.cos(heading) * (sr * 2), hy + np.sin(heading) * (sr * 2)),
         3,
         sr * 0.75,
-        math.degrees(heading),
+        np.degrees(heading),
         SNAKE_HEAD,
     )
 
@@ -28,20 +29,21 @@ def draw_obs(sim: Simulation):
         nd, val, cos_rel, sin_rel = obs[oi], obs[oi + 1], obs[oi + 2], obs[oi + 3]
 
         ray_ang = heading + ray_i * FOOD_RAY_ANGLE
-        ex = hx + math.cos(ray_ang) * VIEW_RADIUS
-        ey = hy + math.sin(ray_ang) * VIEW_RADIUS
+        ex = hx + np.cos(ray_ang) * VIEW_RADIUS
+        ey = hy + np.sin(ray_ang) * VIEW_RADIUS
 
         rl.draw_line_v((hx, hy), (ex, ey), (100, 125, 111, 70))
 
         if nd > 0:
-            rel_ang = math.atan2(sin_rel, cos_rel)
+            rel_ang = np.atan2(sin_rel, cos_rel)
             world_ang = heading + rel_ang
             d = (1 - nd) * VIEW_RADIUS
-            fx = hx + math.cos(world_ang) * d
-            fy = hy + math.sin(world_ang) * d
+            fx = hx + np.cos(world_ang) * d
+            fy = hy + np.sin(world_ang) * d
             food_r = val * MAX_FOOD_VALUE
             rl.draw_line_v((hx, hy), (fx, fy), (160, 110, 70, 180))
             rl.draw_circle_v((fx, fy), food_r, (180, 130, 90, 200))
+
 
 font_file = HERE.parent / "res" / "jetbrains.ttf"
 model_file = HERE / "model" / "foodnet"
@@ -98,7 +100,7 @@ while not rl.window_should_close():
     # Zoom
     wheel = rl.get_mouse_wheel_move()
     if wheel != 0:
-        cam.zoom *= math.pow(1.1, wheel)
+        cam.zoom *= np.pow(1.1, wheel)
 
     if rl.is_key_pressed(rl.KeyboardKey.KEY_O):
         enable_obs = not enable_obs
@@ -115,7 +117,7 @@ while not rl.window_should_close():
     dtms = (dt * 1000) / pyslither.MS_PER_TICK
     sim.tick(dtms)
 
-    deads = sim.get_snake_dead_array()
+    deads = sim.snake_dead_flags
     if deads[SNAKE_IDX]:
         state_reset(sim)
         time_alive = 0.0
@@ -133,16 +135,14 @@ while not rl.window_should_close():
     )
     rl.draw_circle_v((sim.config.radius, sim.config.radius), sim.safe_radius, ENV_BG)
 
-    for x, y, value in zip(
-        sim.get_food_x_array(), sim.get_food_y_array(), sim.get_food_value_array()
-    ):
+    for x, y, value in zip(sim.food_xs, sim.food_ys, sim.food_values):
         rl.draw_circle_v((x, y), value, FOOD_COL)
 
     for i, (sr, dead, num_parts) in enumerate(
         zip(
-            sim.get_snake_radius_array(),
-            sim.get_snake_dead_array(),
-            sim.get_snake_num_parts_array(),
+            sim.snake_radii,
+            sim.snake_dead_flags,
+            sim.snake_part_counts,
         )
     ):
         if not dead:

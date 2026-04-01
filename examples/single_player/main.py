@@ -1,9 +1,8 @@
 import pyray as rl
 import pyslither
+import numpy as np
 
 from pathlib import Path
-import random
-import math
 
 WW = 768
 WH = 432
@@ -34,19 +33,19 @@ def restart(sim: pyslither.Simulation):
     sim.reset()
 
     for i in range(0, sim.config.max_snakes):
-        rand_ang = random.random() * math.pi * 2
-        rand_d = sim.spawn_radius * math.sqrt(random.random())
-        x = sim.config.radius + rand_d * math.cos(rand_ang)
-        y = sim.config.radius + rand_d * math.sin(rand_ang)
+        rand_ang = np.random.random() * np.pi * 2
+        rand_d = sim.spawn_radius * np.sqrt(np.random.random())
+        x = sim.config.radius + rand_d * np.cos(rand_ang)
+        y = sim.config.radius + rand_d * np.sin(rand_ang)
 
-        sim.new_snake(x, y)
+        sim.new_snake(x, y, np.random.random() * np.pi * 2)
 
     for i in range(0, 2048):
-        rand_ang = random.random() * math.pi * 2
-        rand_d = sim.spawn_radius * math.sqrt(random.random())
-        x = sim.config.radius + rand_d * math.cos(rand_ang)
-        y = sim.config.radius + rand_d * math.sin(rand_ang)
-        v = random.uniform(3, 8)
+        rand_ang = np.random.random() * np.pi * 2
+        rand_d = sim.spawn_radius * np.sqrt(np.random.random())
+        x = sim.config.radius + rand_d * np.cos(rand_ang)
+        y = sim.config.radius + rand_d * np.sin(rand_ang)
+        v = np.random.uniform(3, 8)
         sim.new_food(x, y, v)
 
 
@@ -70,12 +69,12 @@ while not rl.window_should_close():
     wheel = rl.get_mouse_wheel_move()
     if wheel != 0:
         zoom_factor = 1.1
-        cam.zoom *= math.pow(zoom_factor, wheel)
+        cam.zoom *= np.pow(zoom_factor, wheel)
 
     mw = rl.get_screen_to_world_2d(rl.get_mouse_position(), cam)
-    ta = math.atan2(mw.y - cam.target.y, mw.x - cam.target.x)
+    ta = np.atan2(mw.y - cam.target.y, mw.x - cam.target.x)
     if ta < 0:
-        ta += math.pi * 2
+        ta += np.pi * 2
 
     sim.set_snake_target_angle(ta, MY_SNAKE)
 
@@ -85,14 +84,14 @@ while not rl.window_should_close():
         sim.set_snake_boost(0, MY_SNAKE)
 
     for i, (target_angle, dead) in enumerate(
-        zip(sim.get_snake_target_angle_array(), sim.get_snake_dead_array())
+        zip(sim.snake_target_angles, sim.snake_dead_flags)
     ):
         if i == 0:
             continue
 
         if not dead:
-            rand_drift = (random.random() - 0.5) * 0.5
-            sim.set_snake_target_angle((target_angle + rand_drift) % (2 * math.pi), i)
+            rand_drift = (np.random.random() - 0.5) * 0.5
+            sim.set_snake_target_angle((target_angle + rand_drift) % (2 * np.pi), i)
 
             dx = sim.config.radius - sim.get_snake_head_x(i)
             dy = sim.config.radius - sim.get_snake_head_y(i)
@@ -101,12 +100,12 @@ while not rl.window_should_close():
             sr = sim.safe_radius * 0.9
 
             if d2 > sr * sr:
-                sim.set_snake_target_angle(math.atan2(dy, dx), i)
+                sim.set_snake_target_angle(np.atan2(dy, dx), i)
 
     dtms = (rl.get_frame_time() * 1000) / pyslither.MS_PER_TICK
     sim.tick(dtms)
 
-    if sim.get_snake_dead_array()[MY_SNAKE]:
+    if sim.snake_dead_flags[MY_SNAKE]:
         restart(sim)
 
     cam.target.x = sim.get_snake_head_x(MY_SNAKE)
@@ -119,16 +118,14 @@ while not rl.window_should_close():
     )
     rl.draw_circle_v((sim.config.radius, sim.config.radius), sim.safe_radius, ENV_BG)
 
-    for fx, fy, fv in zip(
-        sim.get_food_x_array(), sim.get_food_y_array(), sim.get_food_value_array()
-    ):
+    for fx, fy, fv in zip(sim.food_xs, sim.food_ys, sim.food_values):
         rl.draw_circle_v((fx, fy), fv, FOOD_COL)
 
     for i, (dead, radius, num_parts) in enumerate(
         zip(
-            sim.get_snake_dead_array(),
-            sim.get_snake_radius_array(),
-            sim.get_snake_num_parts_array(),
+            sim.snake_dead_flags,
+            sim.snake_radii,
+            sim.snake_part_counts,
         )
     ):
         if not dead:

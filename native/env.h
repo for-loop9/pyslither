@@ -2,10 +2,11 @@
 #define ENV_H
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #define MS_PER_TICK 8
 
-#define MAX_PARTS (1 << 9) // MUST be a power of 2
+#define MAX_PARTS (1 << 9)  // MUST be a power of 2
 #define MAX_PARTS_MASK (MAX_PARTS - 1)
 #define MAX_THICKNESS 6
 #define THICKNESS_RATIO 29
@@ -13,7 +14,7 @@
 #define DRAIN_RATIO 0.08f
 #define DRAIN_RATE 150
 
-#define NUM_ANGLES (1 << 8) // MUST be a power of 2
+#define NUM_ANGLES (1 << 8)  // MUST be a power of 2
 #define NUM_ANGLES_MASK (NUM_ANGLES - 1)
 #define PI 3.14159265359f
 #define PI2 6.28318530718f
@@ -26,6 +27,11 @@
 
 #define BORDER_MARGIN 0.02f
 #define SPAWN_MARGIN 0.1f
+
+typedef struct {
+  uint64_t state;
+  uint64_t inc;
+} pcg32_random_t;
 
 typedef float body_parts[1 + MAX_PARTS];
 
@@ -45,6 +51,8 @@ typedef struct env {
   } cfg;
 
   struct env_dat {
+    pcg32_random_t rng;
+
     float sin[NUM_ANGLES];
     float cos[NUM_ANGLES];
     float pgr[MAX_PARTS + 1];
@@ -58,6 +66,8 @@ typedef struct env {
     float srad2;
     float sprad;
     float sprad2;
+
+    double ctm;
   } dat;
 
   struct env_csnake {
@@ -117,15 +127,13 @@ typedef struct env {
     float* v;
     int* ci;
   } food;
-
-  double ctm;
 } env;
 
 bool env_init(env* e);
 void env_destroy(env* e);
 void env_reset(env* e);
 void env_tick(env* e, float dtms);
-bool env_new_snake(env* e, float x, float y);
+bool env_new_snake(env* e, float x, float y, float ang);
 bool env_new_food(env* e, float x, float y, float v);
 
 #endif

@@ -56,18 +56,6 @@ class Simulation:
         """
         Food indices in food collision grid cell `i`.
         """
-    def get_food_value_array(self) -> numpy.typing.NDArray[numpy.float32]:
-        """
-        Values of all foods.
-        """
-    def get_food_x_array(self) -> numpy.typing.NDArray[numpy.float32]:
-        """
-        X coordinates of all foods.
-        """
-    def get_food_y_array(self) -> numpy.typing.NDArray[numpy.float32]:
-        """
-        Y coordinates of all foods.
-        """
     @typing.overload
     def get_segment_cell(self, x: typing.SupportsFloat | typing.SupportsIndex, y: typing.SupportsFloat | typing.SupportsIndex) -> memoryview:
         """
@@ -98,14 +86,6 @@ class Simulation:
         """
         End Y of collision segment `i`.
         """
-    def get_snake_angle_array(self) -> numpy.typing.NDArray[numpy.float32]:
-        """
-        Current angles (radians) of all snakes.
-        """
-    def get_snake_dead_array(self) -> memoryview:
-        """
-        Death flags of all snakes (`1` = died this tick).
-        """
     def get_snake_head_x(self, i: typing.SupportsInt | typing.SupportsIndex) -> float:
         """
         X coordinate of snake `i`'s head.
@@ -114,21 +94,9 @@ class Simulation:
         """
         Y coordinate of snake `i`'s head.
         """
-    def get_snake_id_array(self) -> memoryview:
-        """
-        Unique IDs of all snakes.
-        """
-    def get_snake_kill_count_array(self) -> numpy.typing.NDArray[numpy.int32]:
-        """
-        Kill counts of all snakes.
-        """
     def get_snake_length(self, i: typing.SupportsInt | typing.SupportsIndex) -> float:
         """
         Effective length of snake `i` (number of parts + fractional growth).
-        """
-    def get_snake_num_parts_array(self) -> memoryview:
-        """
-        Part counts of all snakes.
         """
     def get_snake_part_x(self, i: typing.SupportsInt | typing.SupportsIndex, j: typing.SupportsInt | typing.SupportsIndex) -> float:
         """
@@ -138,25 +106,13 @@ class Simulation:
         """
         Y coordinate of body part `j` of snake `i`.
         """
-    def get_snake_radius_array(self) -> numpy.typing.NDArray[numpy.float32]:
-        """
-        Collision radii of all snakes.
-        """
-    def get_snake_speed_array(self) -> numpy.typing.NDArray[numpy.float32]:
-        """
-        Speeds of all snakes.
-        """
-    def get_snake_target_angle_array(self) -> numpy.typing.NDArray[numpy.float32]:
-        """
-        Target angles of all snakes.
-        """
     def new_food(self, x: typing.SupportsFloat | typing.SupportsIndex, y: typing.SupportsFloat | typing.SupportsIndex, value: typing.SupportsFloat | typing.SupportsIndex) -> bool:
         """
         Place food at (`x`, `y`) with the given value. Returns `False` if outside the safe radius.
         """
-    def new_snake(self, x: typing.SupportsFloat | typing.SupportsIndex, y: typing.SupportsFloat | typing.SupportsIndex) -> bool:
+    def new_snake(self, x: typing.SupportsFloat | typing.SupportsIndex, y: typing.SupportsFloat | typing.SupportsIndex, angle: typing.SupportsFloat | typing.SupportsIndex) -> bool:
         """
-        Spawn a snake at (`x`, `y`). Returns `False` if the position is outside the spawn radius, occupied, or the max snake count is reached.
+        Spawn a snake at (`x`, `y`) with `angle` in radians (`0` to `2pi`). Returns `False` if the position is outside the spawn radius, occupied, or the max snake count is reached.
         """
     def reset(self) -> None:
         """
@@ -184,6 +140,21 @@ class Simulation:
     def food_grid_size(self) -> int:
         ...
     @property
+    def food_values(self) -> numpy.typing.NDArray[numpy.float32]:
+        """
+        Values of all foods.
+        """
+    @property
+    def food_xs(self) -> numpy.typing.NDArray[numpy.float32]:
+        """
+        X coordinates of all foods.
+        """
+    @property
+    def food_ys(self) -> numpy.typing.NDArray[numpy.float32]:
+        """
+        Y coordinates of all foods.
+        """
+    @property
     def inv_food_cell_size(self) -> float:
         ...
     @property
@@ -208,6 +179,46 @@ class Simulation:
     @property
     def segment_grid_size(self) -> int:
         ...
+    @property
+    def snake_angles(self) -> numpy.typing.NDArray[numpy.float32]:
+        """
+        Current angles (radians) of all snakes.
+        """
+    @property
+    def snake_dead_flags(self) -> memoryview:
+        """
+        Dead flags of all snakes (`1` = died this tick).
+        """
+    @property
+    def snake_ids(self) -> memoryview:
+        """
+        Unique IDs of all snakes.
+        """
+    @property
+    def snake_kill_counts(self) -> numpy.typing.NDArray[numpy.int32]:
+        """
+        Kill counts of all snakes.
+        """
+    @property
+    def snake_part_counts(self) -> memoryview:
+        """
+        Part counts of all snakes.
+        """
+    @property
+    def snake_radii(self) -> numpy.typing.NDArray[numpy.float32]:
+        """
+        Collision radii of all snakes.
+        """
+    @property
+    def snake_speeds(self) -> numpy.typing.NDArray[numpy.float32]:
+        """
+        Speeds of all snakes.
+        """
+    @property
+    def snake_target_angles(self) -> numpy.typing.NDArray[numpy.float32]:
+        """
+        Target angles of all snakes.
+        """
     @property
     def spawn_radius(self) -> float:
         ...

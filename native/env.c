@@ -1,9 +1,28 @@
 #include "env.h"
 
 #include <math.h>
-#include <stdlib.h>
 
 #include "util/tdarray.h"
+
+static inline uint32_t pcg32_random_r(pcg32_random_t* rng) {
+  uint64_t oldstate = rng->state;
+  rng->state = oldstate * 6364136223846793005ULL + (rng->inc | 1);
+  uint32_t xorshifted = ((oldstate >> 18u) ^ oldstate) >> 27u;
+  uint32_t rot = oldstate >> 59u;
+  return (xorshifted >> rot) | (xorshifted << ((-rot) & 31));
+}
+
+static inline float pcg32_float(pcg32_random_t* rng) {
+  return (pcg32_random_r(rng) >> 8) * (1.0f / 16777216.0f);
+}
+
+void pcg32_seed(pcg32_random_t* rng, uint64_t seed) {
+  rng->state = 0U;
+  rng->inc = (seed << 1u) | 1u;
+  pcg32_random_r(rng);
+  rng->state += seed;
+  pcg32_random_r(rng);
+}
 
 static inline int fast_mini(int a, int b) { return (a < b) ? a : b; }
 static inline int fast_maxi(int a, int b) { return (a > b) ? a : b; }
@@ -50,6 +69,8 @@ static inline void recalc_snake_factors(struct env* e, int i) {
 
 bool env_init(env* e) {
   if (e->cfg.mp > MAX_PARTS) return false;
+
+  pcg32_seed(&e->dat.rng, 0);
 
   for (int i = 0; i < NUM_ANGLES; i++) {
     e->dat.sin[i] = sinf(i * INPI2);
@@ -197,8 +218,8 @@ static inline void env_tick_movement(env* e, float dtms) {
       float* py = e->snake.py[i] + 1;
 
       if (e->snake.b[i]) {
-        if (e->ctm - e->snake.ldtm[i] > DRAIN_RATE) {
-          e->snake.ldtm[i] = e->ctm;
+        if (e->dat.ctm - e->snake.ldtm[i] > DRAIN_RATE) {
+          e->snake.ldtm[i] = e->dat.ctm;
           if (e->snake.np[i] > 2 || e->snake.g[i] >= 0.14f) {
             int ldx = (e->snake.hi[i] - (e->snake.np[i] - 1)) & MAX_PARTS_MASK;
             env_new_food(e, px[ldx], py[ldx], 4);
@@ -576,8 +597,8 @@ static inline void env_snake_snake_collision(env* e) {
               for (int l = 0; l < 2; l++) {
                 float fx = lpx + (tpx - lpx) * l / 2.0f;
                 float fy = lpy + (tpy - lpy) * l / 2.0f;
-                fx += e->snake.radx2[i] * (rand() / (float)RAND_MAX - 0.5);
-                fy += e->snake.radx2[i] * (rand() / (float)RAND_MAX - 0.5);
+                fx += e->snake.radx2[i] * (pcg32_float(&e->dat.rng) - 0.5);
+                fy += e->snake.radx2[i] * (pcg32_float(&e->dat.rng) - 0.5);
                 env_new_food(e, fx, fy, 14.2f);
               }
               lpx = tpx;
@@ -661,16 +682,16 @@ void env_reset(env* e) {
   tdarray_clear(e->csnake.dead);
 
   e->dat.cid = 0;
-  e->ctm = 0;
+  e->dat.ctm = 0;
 }
 
 void env_tick(env* e, float dtms) {
   env_tick_movement(e, dtms);
   env_tick_collision(e);
-  e->ctm += dtms * MS_PER_TICK;
+  e->dat.ctm += dtms * MS_PER_TICK;
 }
 
-bool env_new_snake(env* e, float x, float y) {
+bool env_new_snake(env* e, float x, float y, float ang) {
   int i = tdarray_length(e->snake.t) - _tdarray_length(e->csnake.dead);
   if (i == e->cfg.msn) return false;
 
@@ -683,9 +704,8 @@ bool env_new_snake(env* e, float x, float y) {
     return false;
   }
 
-  float rang = (rand() / (float)RAND_MAX) * PI2;
-  float s = fast_sinf(&e->dat, rang);
-  float c = fast_cosf(&e->dat, rang);
+  float s = fast_sinf(&e->dat, ang);
+  float c = fast_cosf(&e->dat, ang);
   int gx = x * e->csnake.icsz;
   int gy = y * e->csnake.icsz;
   int cell = gy * e->csnake.gsz + gx;
@@ -696,8 +716,8 @@ bool env_new_snake(env* e, float x, float y) {
 
   tdarray_push(&e->snake.sin, &s);
   tdarray_push(&e->snake.cos, &c);
-  tdarray_push(&e->snake.ang, &rang);
-  tdarray_push(&e->snake.tang, &rang);
+  tdarray_push(&e->snake.ang, &ang);
+  tdarray_push(&e->snake.tang, &ang);
   tdarray_push(&e->snake.np, ((int[]){2}));
   tdarray_push(&e->snake.hi, ((int[]){e->snake.np[i] - 1}));
   tdarray_push(&e->snake.bv, ((float[]){0}));
