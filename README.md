@@ -25,12 +25,12 @@ sim.new_food(fx, fy, value)
 for i in range(0, 2048):
     sim.tick(1.0)
 
-    for i, (dead, angle) in enumerate(zip(sim.snake_dead_flags, sim.snake_angles)):
+    for j, (dead, angle) in enumerate(zip(sim.snake_dead_flags, sim.snake_angles)):
         if dead:
             continue
 
-        sim.set_snake_target_angle((angle + np.random.random()) % (np.pi * 2), i)
-        sim.set_snake_boost(np.random.choice([True, False]), i)
+        sim.set_snake_target_angle((angle + np.random.random()) % (np.pi * 2), j)
+        sim.set_snake_boost(np.random.choice([True, False]), j)
 
 print(f"total snakes = {sim.num_snakes}")
 print(f"total food = {sim.num_food}")
