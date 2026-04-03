@@ -84,7 +84,7 @@ while not rl.window_should_close():
         sim.set_snake_boost(0, MY_SNAKE)
 
     for i, (target_angle, dead) in enumerate(
-        zip(sim.snake_target_angles, sim.snake_dead_flags)
+        zip(sim.snake_target_angles, sim.snake_states)
     ):
         if i == 0:
             continue
@@ -105,7 +105,7 @@ while not rl.window_should_close():
     dtms = (rl.get_frame_time() * 1000) / pyslither.MS_PER_TICK
     sim.tick(dtms)
 
-    if sim.snake_dead_flags[MY_SNAKE]:
+    if sim.snake_states[MY_SNAKE]:
         restart(sim)
 
     cam.target.x = sim.get_snake_head_x(MY_SNAKE)
@@ -123,7 +123,7 @@ while not rl.window_should_close():
 
     for i, (dead, radius, num_parts) in enumerate(
         zip(
-            sim.snake_dead_flags,
+            sim.snake_states,
             sim.snake_radii,
             sim.snake_part_counts,
         )

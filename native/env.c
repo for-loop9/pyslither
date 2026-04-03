@@ -122,7 +122,7 @@ bool env_init(env* e) {
   e->snake.b = tdarray_create(int, 8);
   e->snake.g = tdarray_create(float, 8);
   e->snake.dir = tdarray_create(int, 8);
-  e->snake.dead = tdarray_create(int, 8);
+  e->snake.state = tdarray_create(int, 8);
   e->snake.kc = tdarray_create(int, 8);
   e->snake.ldtm = tdarray_create(double, 8);
   e->snake.t = tdarray_create(float, 8);
@@ -177,7 +177,7 @@ void env_destroy(env* e) {
   tdarray_destroy(e->snake.b);
   tdarray_destroy(e->snake.g);
   tdarray_destroy(e->snake.dir);
-  tdarray_destroy(e->snake.dead);
+  tdarray_destroy(e->snake.state);
   tdarray_destroy(e->snake.kc);
   tdarray_destroy(e->snake.ldtm);
   tdarray_destroy(e->snake.t);
@@ -215,7 +215,7 @@ void env_destroy(env* e) {
 
 static inline void env_tick_movement(env* e, float dtms) {
   for (int i = tdarray_length(e->snake.t) - 1; i >= 0; i--) {
-    if (!e->snake.dead[i]) {
+    if (e->snake.state[i] == 0) {
       float* px = e->snake.px[i] + 1;
       float* py = e->snake.py[i] + 1;
 
@@ -446,7 +446,7 @@ static inline void env_remove_snake(env* e, int i) {
     e->snake.hi[i] = e->snake.hi[last];
     e->snake.np[i] = e->snake.np[last];
     e->snake.dir[i] = e->snake.dir[last];
-    e->snake.dead[i] = e->snake.dead[last];
+    e->snake.state[i] = e->snake.state[last];
     e->snake.kc[i] = e->snake.kc[last];
     e->snake.id[i] = e->snake.id[last];
   }
@@ -474,7 +474,7 @@ static inline void env_remove_snake(env* e, int i) {
   tdarray_pop(e->snake.hi);
   tdarray_pop(e->snake.np);
   tdarray_pop(e->snake.dir);
-  tdarray_pop(e->snake.dead);
+  tdarray_pop(e->snake.state);
   tdarray_pop(e->snake.kc);
   tdarray_pop(e->snake.id);
 }
@@ -497,12 +497,12 @@ static inline void env_build_csnake_grid(env* e) {
   for (int i = 0; i < cells; i++) tdarray_clear(e->csnake.cgrd[i]);
 
   for (int i = tdarray_length(e->snake.t) - 1; i >= 0; i--)
-    if (!e->snake.dead[i]) env_grid_insert_snake(e, i);
+    if (e->snake.state[i] == 0) env_grid_insert_snake(e, i);
 }
 
 static inline void env_food_collision(env* e) {
   for (int i = tdarray_length(e->snake.t) - 1; i >= 0; i--) {
-    if (!e->snake.dead[i]) {
+    if (e->snake.state[i] == 0) {
       float mx = SPOS_X(e->snake, i) + e->snake.cos[i] *
                                            (0.36 * e->snake.radx2[i] + 31) *
                                            e->cfg.msr * e->snake.sp[i];
@@ -553,14 +553,14 @@ static inline void env_snake_border_collision(env* e) {
 
     if (dx * dx + dy * dy >= e->dat.srad2) {
       tdarray_push(&e->csnake.dead, &i);
-      e->snake.dead[i] = 1;
+      e->snake.state[i] = 2;
     }
   }
 }
 
 static inline void env_snake_snake_collision(env* e) {
   for (int i = tdarray_length(e->snake.t) - 1; i >= 0; i--) {
-    if (!e->snake.dead[i]) {
+    if (e->snake.state[i] == 0) {
       float hx = SPOS_X(e->snake, i) + e->snake.cos[i] * e->snake.rad[i];
       float hy = SPOS_Y(e->snake, i) + e->snake.sin[i] * e->snake.rad[i];
 
@@ -572,7 +572,7 @@ static inline void env_snake_snake_collision(env* e) {
         int s = e->csnake.cgrd[cell][j];
         int sidx = e->csnake.sidx[s];
 
-        if (sidx != i && !e->snake.dead[sidx]) {
+        if (sidx != i && e->snake.state[sidx] == 0) {
           int s0 = e->csnake.s0[s];
           int s1 = e->csnake.s1[s];
           float s0x = e->snake.px[sidx][s0];
@@ -582,7 +582,7 @@ static inline void env_snake_snake_collision(env* e) {
 
           if (point_segment2(hx, hy, s0x, s0y, s1x, s1y, e->snake.rad2[sidx])) {
             tdarray_push(&e->csnake.dead, &i);
-            e->snake.dead[i] = 1;
+            e->snake.state[i] = 1;
             e->snake.kc[sidx]++;
 
             float lpx = SPOS_X(e->snake, i);
@@ -659,7 +659,7 @@ void env_reset(env* e) {
   tdarray_clear(e->snake.b);
   tdarray_clear(e->snake.g);
   tdarray_clear(e->snake.dir);
-  tdarray_clear(e->snake.dead);
+  tdarray_clear(e->snake.state);
   tdarray_clear(e->snake.kc);
   tdarray_clear(e->snake.ldtm);
   tdarray_clear(e->snake.t);
@@ -726,7 +726,7 @@ bool env_new_snake(env* e, float x, float y, float ang) {
   tdarray_push(&e->snake.b, ((int[]){0}));
   tdarray_push(&e->snake.g, ((float[]){0}));
   tdarray_push(&e->snake.dir, ((int[]){0}));
-  tdarray_push(&e->snake.dead, ((int[]){0}));
+  tdarray_push(&e->snake.state, ((int[]){0}));
   tdarray_push(&e->snake.kc, ((int[]){0}));
   tdarray_push(&e->snake.ldtm, ((double[]){0}));
   tdarray_push(&e->snake.t, ((float[]){0}));

@@ -185,11 +185,6 @@ class Simulation:
         Current angles (radians) of all snakes.
         """
     @property
-    def snake_dead_flags(self) -> memoryview:
-        """
-        Dead flags of all snakes (`1` = died this tick).
-        """
-    @property
     def snake_ids(self) -> memoryview:
         """
         Unique IDs of all snakes.
@@ -213,6 +208,14 @@ class Simulation:
     def snake_speeds(self) -> numpy.typing.NDArray[numpy.float32]:
         """
         Speeds of all snakes.
+        """
+    @property
+    def snake_states(self) -> memoryview:
+        """
+                    States of all snakes.
+                        `0`: Alive
+                        `1`: Killed by snake
+                        `2`: Killed by border
         """
     @property
     def snake_target_angles(self) -> numpy.typing.NDArray[numpy.float32]:

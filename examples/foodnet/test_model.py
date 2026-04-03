@@ -117,8 +117,8 @@ while not rl.window_should_close():
     dtms = (dt * 1000) / pyslither.MS_PER_TICK
     sim.tick(dtms)
 
-    deads = sim.snake_dead_flags
-    if deads[SNAKE_IDX]:
+    states = sim.snake_states
+    if states[SNAKE_IDX]:
         state_reset(sim)
         time_alive = 0.0
 
@@ -141,7 +141,7 @@ while not rl.window_should_close():
     for i, (sr, dead, num_parts) in enumerate(
         zip(
             sim.snake_radii,
-            sim.snake_dead_flags,
+            sim.snake_states,
             sim.snake_part_counts,
         )
     ):

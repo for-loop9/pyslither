@@ -25,7 +25,7 @@ sim.new_food(fx, fy, value)
 for i in range(0, 2048):
     sim.tick(1.0)
 
-    for j, (dead, angle) in enumerate(zip(sim.snake_dead_flags, sim.snake_angles)):
+    for j, (dead, angle) in enumerate(zip(sim.snake_states, sim.snake_angles)):
         if dead:
             continue
 

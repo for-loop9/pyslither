@@ -33,7 +33,7 @@ def state_reset(sim: Simulation):
 def get_observation(sim: Simulation):
     obs = np.zeros(NUM_OBS, dtype=np.float32)
 
-    if sim.snake_dead_flags[SNAKE_IDX]:
+    if sim.snake_states[SNAKE_IDX]:
         return obs
 
     hx = sim.get_snake_head_x(SNAKE_IDX)
@@ -88,7 +88,7 @@ def get_observation(sim: Simulation):
 
 def get_reward(sim: Simulation, prev_length):
     snake_length = sim.get_snake_length(SNAKE_IDX)
-    died = sim.snake_dead_flags[SNAKE_IDX]
+    died = sim.snake_states[SNAKE_IDX]
 
     reward = (snake_length - prev_length) * 0.5
     reward += 0.0001

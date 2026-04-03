@@ -183,15 +183,20 @@ PYBIND11_MODULE(_core, m) {
           },
           "Part counts of all snakes.")
       .def_property_readonly(
-          "snake_dead_flags",
+          "snake_states",
           [](env* e) {
-            int* ptr = e->snake.dead;
+            int* ptr = e->snake.state;
             ssize_t n = tdarray_length(ptr);
             return py::memoryview::from_buffer(
                 ptr, sizeof(int), py::format_descriptor<int>::value, {n},
                 {sizeof(int)}, true);
           },
-          "Dead flags of all snakes (`1` = died this tick).")
+          R"doc(
+            States of all snakes.
+                `0`: Alive
+                `1`: Killed by snake
+                `2`: Killed by border
+            )doc")
       .def_property_readonly(
           "snake_radii",
           [](env* e) {

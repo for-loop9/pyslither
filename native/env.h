@@ -107,7 +107,7 @@ typedef struct env {
     int* hi;
     int* np;
     int* dir;
-    int* dead;
+    int* state;
     int* kc;
     int* id;
 
