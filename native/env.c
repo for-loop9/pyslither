@@ -701,8 +701,9 @@ bool env_new_snake(env* e, float x, float y, float ang) {
   float cy = e->cfg.rad;
   float dx = x - cx;
   float dy = y - cy;
+  float d2 = dx * dx + dy * dy;
 
-  if ((dx * dx + dy * dy) >= e->dat.sprad2) {
+  if (d2 >= e->dat.sprad2) {
     return false;
   }
 
@@ -774,12 +775,12 @@ bool env_new_snake(env* e, float x, float y, float ang) {
     x -= e->cfg.sl * e->snake.cos[i] * (1 - mv);
     y -= e->cfg.sl * e->snake.sin[i] * (1 - mv);
 
-    float dx = x - cx;
-    float dy = y - cy;
-    float dist2 = dx * dx + dy * dy;
+    dx = x - cx;
+    dy = y - cy;
+    d2 = dx * dx + dy * dy;
 
-    if (dist2 > safe * safe) {
-      float scale = safe / sqrtf(dist2);
+    if (d2 > safe * safe) {
+      float scale = safe / sqrtf(d2);
       x = cx + dx * scale;
       y = cy + dy * scale;
     }
