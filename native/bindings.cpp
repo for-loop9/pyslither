@@ -169,7 +169,10 @@ PYBIND11_MODULE(_core, m) {
           "snake_kill_counts",
           [](env* e) {
             int* ptr = e->snake.kc;
-            return py::array_t<int>(tdarray_length(ptr), ptr);
+            ssize_t n = tdarray_length(ptr);
+            return py::memoryview::from_buffer(
+                ptr, sizeof(int), py::format_descriptor<int>::value, {n},
+                {sizeof(int)}, true);
           },
           "Kill counts of all snakes.")
       .def_property_readonly(

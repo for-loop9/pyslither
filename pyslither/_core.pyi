@@ -190,7 +190,7 @@ class Simulation:
         Unique IDs of all snakes.
         """
     @property
-    def snake_kill_counts(self) -> numpy.typing.NDArray[numpy.int32]:
+    def snake_kill_counts(self) -> memoryview:
         """
         Kill counts of all snakes.
         """
