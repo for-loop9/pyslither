@@ -4,6 +4,11 @@
 
 #include "util/tdarray.h"
 
+void env_empty_cb0(env* e, int p0) {}
+void env_empty_cb1(env* e, int p0, int p1) {}
+void env_empty_cb2(env* e, int p0, bool p1) {}
+void env_empty_cb3(env* e, int p0, int p1, int p2) {}
+
 static inline uint32_t pcg32_random_r(pcg32_random_t* rng) {
   uint64_t oldstate = rng->state;
   rng->state = oldstate * 6364136223846793005ULL + (rng->inc | 1);
@@ -119,10 +124,10 @@ bool env_init(env* e) {
   e->snake.np = tdarray_create(int, 8);
   e->snake.hi = tdarray_create(int, 8);
   e->snake.bv = tdarray_create(float, 8);
-  e->snake.b = tdarray_create(int, 8);
+  e->snake.b = tdarray_create(bool, 8);
+  e->snake.state = tdarray_create(bool, 8);
   e->snake.g = tdarray_create(float, 8);
   e->snake.dir = tdarray_create(int, 8);
-  e->snake.state = tdarray_create(int, 8);
   e->snake.kc = tdarray_create(int, 8);
   e->snake.ldtm = tdarray_create(double, 8);
   e->snake.t = tdarray_create(float, 8);
@@ -150,6 +155,14 @@ bool env_init(env* e) {
   e->csnake.s0 = tdarray_create(int, 8);
   e->csnake.s1 = tdarray_create(int, 8);
   e->csnake.dead = tdarray_create(int, 8);
+
+  if (!e->on_kill) e->on_kill = env_empty_cb1;
+  if (!e->on_eat) e->on_eat = env_empty_cb1;
+  if (!e->on_growth) e->on_growth = env_empty_cb0;
+  if (!e->on_lpart) e->on_lpart = env_empty_cb0;
+  if (!e->on_move) e->on_move = env_empty_cb2;
+  if (!e->on_bfspawn) e->on_bfspawn = env_empty_cb1;
+  if (!e->on_dfspawn) e->on_dfspawn = env_empty_cb3;
 
   env_reset(e);
 
@@ -213,110 +226,147 @@ void env_destroy(env* e) {
   tdarray_destroy(e->cfood.cgrd);
 }
 
+
+
+static inline void env_grid_insert_food(struct env* e, int i) {
+  int gx = e->food.x[i] * e->cfood.icsz;
+  int gy = e->food.y[i] * e->cfood.icsz;
+  int h = gy * e->cfood.gsz + gx;
+  int ci = tdarray_length(e->cfood.cgrd[h]);
+  tdarray_push(&e->food.ci, &ci);
+  tdarray_push(&e->cfood.cgrd[h], &i);
+}
+
+bool env_new_food(env* e, float x, float y, float v) {
+  float dx = e->cfg.rad - x;
+  float dy = e->cfg.rad - y;
+  float d2 = dx * dx + dy * dy;
+  if (d2 >= e->dat.srad2) return false;
+
+  int i = tdarray_length(e->food.x);
+
+  tdarray_push(&e->food.x, &x);
+  tdarray_push(&e->food.y, &y);
+  tdarray_push(&e->food.v, &v);
+
+  env_grid_insert_food(e, i);
+
+  return true;
+}
+
 static inline void env_tick_movement(env* e, float dtms) {
   for (int i = tdarray_length(e->snake.t) - 1; i >= 0; i--) {
-    if (e->snake.state[i] == 0) {
-      float* px = e->snake.px[i] + 1;
-      float* py = e->snake.py[i] + 1;
+    float* px = e->snake.px[i] + 1;
+    float* py = e->snake.py[i] + 1;
 
-      if (e->snake.b[i]) {
-        if (e->dat.ctm - e->snake.ldtm[i] > DRAIN_RATE) {
-          e->snake.ldtm[i] = e->dat.ctm;
-          if (e->snake.np[i] > 2 || e->snake.g[i] >= 0.14f) {
-            int ldx = (e->snake.hi[i] - (e->snake.np[i] - 1)) & MAX_PARTS_MASK;
-            env_new_food(e, px[ldx], py[ldx], 4);
-          }
-          int tl = (int)(e->snake.np[i] + e->snake.g[i]);
-          e->snake.g[i] -= e->dat.pgr[tl] * DRAIN_RATIO;
-        }
-      }
+    e->snake.b[i] &= (e->snake.np[i] > 2 || e->snake.g[i] > 0);
 
-      if (e->snake.g[i] <= 0) {
-        if (e->snake.np[i] == 2) {
-          e->snake.b[i] = 0;
-          e->snake.g[i] = 0;
-        } else {
-          e->snake.g[i] += 0.99999f;
-          e->snake.np[i]--;
-          recalc_snake_factors(e, i);
-        }
-      }
-
-      float dt = -0.02f + (0.015 + 0.02f) * e->snake.b[i];
-      e->snake.bv[i] += dt * dtms / e->snake.btr[i];
-
-      if (e->snake.bv[i] > 1.0f)
-        e->snake.bv[i] = 1.0f;
-      else if (e->snake.bv[i] < 0.0f)
-        e->snake.bv[i] = 0.0f;
-
-      e->snake.sp[i] =
-          e->snake.bs[i] + (e->cfg.ms - e->snake.bs[i]) * e->snake.bv[i];
-
-      float sp = e->snake.sp[i] * dtms * 0.25f;
-      if (sp >= e->cfg.sl) sp = e->cfg.sl;
-
-      float ts = e->snake.ts[i] * dtms;
-      float dta = e->snake.tang[i] - e->snake.ang[i];
-
-      if (dta > PI) dta -= PI2;
-      if (dta < -PI) dta += PI2;
-
-      if (dta > ts) {
-        e->snake.ang[i] = fast_modf(e->snake.ang[i] + ts, PI2);
-        e->snake.dir[i] = 2;
-      } else if (dta < -ts) {
-        e->snake.ang[i] = fast_modf(e->snake.ang[i] - ts + PI2, PI2);
-        e->snake.dir[i] = 1;
-      } else {
-        e->snake.ang[i] = e->snake.tang[i];
-        e->snake.dir[i] = 0;
-      }
-
-      e->snake.sin[i] = fast_sinf(&e->dat, e->snake.ang[i]);
-      e->snake.cos[i] = fast_cosf(&e->dat, e->snake.ang[i]);
-
-      SPOS_X(e->snake, i) += sp * e->snake.cos[i];
-      SPOS_Y(e->snake, i) += sp * e->snake.sin[i];
-
-      float phx = px[e->snake.hi[i]];
-      float phy = py[e->snake.hi[i]];
-
-      float dx = SPOS_X(e->snake, i) - phx;
-      float dy = SPOS_Y(e->snake, i) - phy;
-
-      float d2 = dx * dx + dy * dy;
-
-      if (d2 >= e->dat.sl2) {
-        e->snake.hi[i] = (e->snake.hi[i] + 1) & MAX_PARTS_MASK;
-
-        px[e->snake.hi[i]] = SPOS_X(e->snake, i);
-        py[e->snake.hi[i]] = SPOS_Y(e->snake, i);
-
-        if (e->snake.g[i] >= 1 && e->snake.np[i] < e->cfg.mp) {
-          e->snake.g[i] -= 1;
-          e->snake.np[i]++;
-
-          recalc_snake_factors(e, i);
+    if (e->snake.b[i]) {
+      if (e->dat.ctm - e->snake.ldtm[i] > DRAIN_RATE) {
+        e->snake.ldtm[i] = e->dat.ctm;
+        if (e->snake.np[i] > 2 || e->snake.g[i] >= 0.14f) {
+          int ldx = (e->snake.hi[i] - (e->snake.np[i] - 1)) & MAX_PARTS_MASK;
+          env_new_food(e, px[ldx], py[ldx], 4);
+          e->on_bfspawn(e, tdarray_length(e->food.x) - 1, i);
         }
 
-        if (e->snake.np[i] > 3) {
-          int pidx = (e->snake.hi[i] - 2) & MAX_PARTS_MASK;
-          int n = 0;
-          float mv = 0;
+        e->snake.g[i] -=
+            e->dat.pgr[(int)(e->snake.np[i] + e->snake.g[i])] * DRAIN_RATIO;
 
-          for (int j = 3; j < e->snake.np[i]; j++) {
-            int idx = (e->snake.hi[i] - j) & MAX_PARTS_MASK;
-            n++;
-            if (n < 5) mv = e->cfg.tsr * n / 4.0f;
-
-            px[idx] += (px[pidx] - px[idx]) * mv;
-            py[idx] += (py[pidx] - py[idx]) * mv;
-
-            pidx = idx;
+        bool lp = false;
+        if (e->snake.g[i] <= 0) {
+          if (e->snake.np[i] > 2) {
+            e->snake.g[i] += 0.99999f;
+            e->snake.np[i]--;
+            lp = true;
+            recalc_snake_factors(e, i);
+            e->on_lpart(e, i);
+          } else {
+            e->snake.g[i] = 0;
           }
         }
+        if (!lp) e->on_growth(e, i);
       }
+    }
+
+    float dt = -0.02f + (0.015 + 0.02f) * e->snake.b[i];
+    e->snake.bv[i] += dt * dtms / e->snake.btr[i];
+
+    if (e->snake.bv[i] > 1.0f)
+      e->snake.bv[i] = 1.0f;
+    else if (e->snake.bv[i] < 0.0f)
+      e->snake.bv[i] = 0.0f;
+
+    e->snake.sp[i] =
+        e->snake.bs[i] + (e->cfg.ms - e->snake.bs[i]) * e->snake.bv[i];
+
+    float sp = e->snake.sp[i] * dtms * 0.25f;
+    if (sp >= e->cfg.sl) sp = e->cfg.sl;
+
+    float ts = e->snake.ts[i] * dtms;
+    float dta = e->snake.tang[i] - e->snake.ang[i];
+
+    if (dta > PI) dta -= PI2;
+    if (dta < -PI) dta += PI2;
+
+    if (dta > ts) {
+      e->snake.ang[i] = fast_modf(e->snake.ang[i] + ts, PI2);
+      e->snake.dir[i] = 2;
+    } else if (dta < -ts) {
+      e->snake.ang[i] = fast_modf(e->snake.ang[i] - ts + PI2, PI2);
+      e->snake.dir[i] = 1;
+    } else {
+      e->snake.ang[i] = e->snake.tang[i];
+      e->snake.dir[i] = 0;
+    }
+
+    e->snake.sin[i] = fast_sinf(&e->dat, e->snake.ang[i]);
+    e->snake.cos[i] = fast_cosf(&e->dat, e->snake.ang[i]);
+
+    SPOS_X(e->snake, i) += sp * e->snake.cos[i];
+    SPOS_Y(e->snake, i) += sp * e->snake.sin[i];
+
+    float phx = px[e->snake.hi[i]];
+    float phy = py[e->snake.hi[i]];
+
+    float dx = SPOS_X(e->snake, i) - phx;
+    float dy = SPOS_Y(e->snake, i) - phy;
+
+    float d2 = dx * dx + dy * dy;
+
+    if (d2 >= e->dat.sl2) {
+      e->snake.hi[i] = (e->snake.hi[i] + 1) & MAX_PARTS_MASK;
+
+      px[e->snake.hi[i]] = SPOS_X(e->snake, i);
+      py[e->snake.hi[i]] = SPOS_Y(e->snake, i);
+
+      bool np = e->snake.g[i] >= 1 && e->snake.np[i] < e->cfg.mp;
+
+      if (np) {
+        e->snake.g[i] -= 1;
+        e->snake.np[i]++;
+
+        recalc_snake_factors(e, i);
+      }
+
+      if (e->snake.np[i] > 3) {
+        int pidx = (e->snake.hi[i] - 2) & MAX_PARTS_MASK;
+        int n = 0;
+        float mv = 0;
+
+        for (int j = 3; j < e->snake.np[i]; j++) {
+          int idx = (e->snake.hi[i] - j) & MAX_PARTS_MASK;
+          n++;
+          if (n < 5) mv = e->cfg.tsr * n / 4.0f;
+
+          px[idx] += (px[pidx] - px[idx]) * mv;
+          py[idx] += (py[pidx] - py[idx]) * mv;
+
+          pidx = idx;
+        }
+      }
+
+      e->on_move(e, i, np);
     }
   }
 }
@@ -357,15 +407,6 @@ static inline void env_grid_insert_segment(struct env* e, int i, int s0,
       tdarray_push(&e->csnake.cgrd[cell], &s);
     }
   }
-}
-
-static inline void env_grid_insert_food(struct env* e, int i) {
-  int gx = e->food.x[i] * e->cfood.icsz;
-  int gy = e->food.y[i] * e->cfood.icsz;
-  int h = gy * e->cfood.gsz + gx;
-  int ci = tdarray_length(e->cfood.cgrd[h]);
-  tdarray_push(&e->food.ci, &ci);
-  tdarray_push(&e->cfood.cgrd[h], &i);
 }
 
 static inline void env_remove_food(env* e, int i) {
@@ -497,42 +538,42 @@ static inline void env_build_csnake_grid(env* e) {
   for (int i = 0; i < cells; i++) tdarray_clear(e->csnake.cgrd[i]);
 
   for (int i = tdarray_length(e->snake.t) - 1; i >= 0; i--)
-    if (e->snake.state[i] == 0) env_grid_insert_snake(e, i);
+    env_grid_insert_snake(e, i);
 }
 
 static inline void env_food_collision(env* e) {
   for (int i = tdarray_length(e->snake.t) - 1; i >= 0; i--) {
-    if (e->snake.state[i] == 0) {
-      float mx = SPOS_X(e->snake, i) + e->snake.cos[i] *
-                                           (0.36 * e->snake.radx2[i] + 31) *
-                                           e->cfg.msr * e->snake.sp[i];
-      float my = SPOS_Y(e->snake, i) + e->snake.sin[i] *
-                                           (0.36 * e->snake.radx2[i] + 31) *
-                                           e->cfg.msr * e->snake.sp[i];
+    float mx = SPOS_X(e->snake, i) + e->snake.cos[i] *
+                                         (0.36 * e->snake.radx2[i] + 31) *
+                                         e->cfg.msr * e->snake.sp[i];
+    float my = SPOS_Y(e->snake, i) + e->snake.sin[i] *
+                                         (0.36 * e->snake.radx2[i] + 31) *
+                                         e->cfg.msr * e->snake.sp[i];
 
-      int gx = mx * e->cfood.icsz;
-      int gy = my * e->cfood.icsz;
+    int gx = mx * e->cfood.icsz;
+    int gy = my * e->cfood.icsz;
 
-      gx = fast_maxi(1, fast_mini(gx, e->cfood.gsz - 2));
-      gy = fast_maxi(1, fast_mini(gy, e->cfood.gsz - 2));
+    gx = fast_maxi(1, fast_mini(gx, e->cfood.gsz - 2));
+    gy = fast_maxi(1, fast_mini(gy, e->cfood.gsz - 2));
 
-      for (int cy = -1; cy <= 1; cy++) {
-        for (int cx = -1; cx <= 1; cx++) {
-          int nx = gx + cx;
-          int ny = gy + cy;
-          int h = ny * e->cfood.gsz + nx;
+    for (int cy = -1; cy <= 1; cy++) {
+      for (int cx = -1; cx <= 1; cx++) {
+        int nx = gx + cx;
+        int ny = gy + cy;
+        int h = ny * e->cfood.gsz + nx;
 
-          for (int j = tdarray_length(e->cfood.cgrd[h]) - 1; j >= 0; j--) {
-            int f = e->cfood.cgrd[h][j];
-            float dx = e->food.x[f] - mx;
-            float dy = e->food.y[f] - my;
+        for (int j = tdarray_length(e->cfood.cgrd[h]) - 1; j >= 0; j--) {
+          int f = e->cfood.cgrd[h][j];
+          float dx = e->food.x[f] - mx;
+          float dy = e->food.y[f] - my;
 
-            if (dx * dx + dy * dy <= e->snake.mr2[i]) {
-              int tl = (int)(e->snake.np[i] + e->snake.g[i]);
-              e->snake.g[i] += e->dat.pgr[tl] * e->food.v[f] * e->food.v[f] *
-                               FOOD_VALUE_RATIO;
-              env_remove_food(e, f);
-            }
+          if (dx * dx + dy * dy <= e->snake.mr2[i]) {
+            int tl = (int)(e->snake.np[i] + e->snake.g[i]);
+            e->snake.g[i] +=
+                e->dat.pgr[tl] * e->food.v[f] * e->food.v[f] * FOOD_VALUE_RATIO;
+            e->on_eat(e, f, i);
+            e->on_growth(e, i);
+            env_remove_food(e, f);
           }
         }
       }
@@ -552,15 +593,15 @@ static inline void env_snake_border_collision(env* e) {
     float dy = hy - cy;
 
     if (dx * dx + dy * dy >= e->dat.srad2) {
-      tdarray_push(&e->csnake.dead, &i);
-      e->snake.state[i] = 2;
+      e->on_kill(e, i, -1);
+      env_remove_snake(e, i);
     }
   }
 }
 
 static inline void env_snake_snake_collision(env* e) {
   for (int i = tdarray_length(e->snake.t) - 1; i >= 0; i--) {
-    if (e->snake.state[i] == 0) {
+    if (e->snake.state[i] == false) {
       float hx = SPOS_X(e->snake, i) + e->snake.cos[i] * e->snake.rad[i];
       float hy = SPOS_Y(e->snake, i) + e->snake.sin[i] * e->snake.rad[i];
 
@@ -582,8 +623,9 @@ static inline void env_snake_snake_collision(env* e) {
 
           if (point_segment2(hx, hy, s0x, s0y, s1x, s1y, e->snake.rad2[sidx])) {
             tdarray_push(&e->csnake.dead, &i);
-            e->snake.state[i] = 1;
+            e->snake.state[i] = true;
             e->snake.kc[sidx]++;
+            e->on_kill(e, i, sidx);
 
             float lpx = SPOS_X(e->snake, i);
             float lpy = SPOS_Y(e->snake, i);
@@ -591,14 +633,15 @@ static inline void env_snake_snake_collision(env* e) {
             float* px = e->snake.px[i] + 1;
             float* py = e->snake.py[i] + 1;
 
+            int nfp = tdarray_length(e->food.x);
             for (int k = 0; k < e->snake.np[i]; k++) {
               int idx = (e->snake.hi[i] - k) & MAX_PARTS_MASK;
               float tpx = px[idx];
               float tpy = py[idx];
 
               for (int l = 0; l < 2; l++) {
-                float fx = lpx + (tpx - lpx) * l / 2.0f;
-                float fy = lpy + (tpy - lpy) * l / 2.0f;
+                float fx = lpx + (tpx - lpx) * l * 0.5f;
+                float fy = lpy + (tpy - lpy) * l * 0.5f;
                 fx += e->snake.radx2[i] * (pcg32_float(&e->dat.rng) - 0.5);
                 fy += e->snake.radx2[i] * (pcg32_float(&e->dat.rng) - 0.5);
                 env_new_food(e, fx, fy, 14.2f);
@@ -606,6 +649,8 @@ static inline void env_snake_snake_collision(env* e) {
               lpx = tpx;
               lpy = tpy;
             }
+            int nfn = tdarray_length(e->food.x);
+            e->on_dfspawn(e, nfp, nfn - nfp, i);
 
             goto EARLY_EXIT;
           }
@@ -621,24 +666,15 @@ static inline void env_remove_dead_snakes(env* e) {
   for (int d = 0; d < num_dead; d++) {
     int i = e->csnake.dead[d];
     env_remove_snake(e, i);
-    int moved = tdarray_length(e->snake.t);
-    if (moved != i) {
-      for (int k = d + 1; k < num_dead; k++) {
-        if (e->csnake.dead[k] == moved) {
-          e->csnake.dead[k] = i;
-          break;
-        }
-      }
-    }
   }
   tdarray_clear(e->csnake.dead);
 }
 
 static inline void env_tick_collision(env* e) {
-  env_remove_dead_snakes(e);
   env_snake_border_collision(e);
   env_build_csnake_grid(e);
   env_snake_snake_collision(e);
+  env_remove_dead_snakes(e);
   env_food_collision(e);
 }
 
@@ -727,7 +763,7 @@ bool env_new_snake(env* e, float x, float y, float ang) {
   tdarray_push(&e->snake.b, ((int[]){0}));
   tdarray_push(&e->snake.g, ((float[]){0}));
   tdarray_push(&e->snake.dir, ((int[]){0}));
-  tdarray_push(&e->snake.state, ((int[]){0}));
+  tdarray_push(&e->snake.state, ((bool[]){false}));
   tdarray_push(&e->snake.kc, ((int[]){0}));
   tdarray_push(&e->snake.ldtm, ((double[]){0}));
   tdarray_push(&e->snake.t, ((float[]){0}));
@@ -792,22 +828,6 @@ bool env_new_snake(env* e, float x, float y, float ang) {
   }
 
   env_grid_insert_snake(e, i);
-  return true;
-}
-
-bool env_new_food(env* e, float x, float y, float v) {
-  float dx = e->cfg.rad - x;
-  float dy = e->cfg.rad - y;
-  float d2 = dx * dx + dy * dy;
-  if (d2 >= e->dat.srad2) return false;
-
-  int i = tdarray_length(e->food.x);
-
-  tdarray_push(&e->food.x, &x);
-  tdarray_push(&e->food.y, &y);
-  tdarray_push(&e->food.v, &v);
-
-  env_grid_insert_food(e, i);
 
   return true;
 }

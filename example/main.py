@@ -1,6 +1,7 @@
 import pyray as rl
 import pyslither
 import numpy as np
+from pyslither import Event
 
 from pathlib import Path
 
@@ -9,25 +10,17 @@ WH = 432
 MY_SNAKE = 0
 HERE = Path(__file__).parent
 
-BG = (235, 232, 225, 255)
-WORLD_BG = (215, 210, 200, 255)
-ENV_BG = (228, 224, 216, 255)
-FOOD_COL = (210, 200, 200, 255)
-SNAKE_BODY = (140, 145, 150, 255)
-SNAKE_HEAD = (110, 115, 120, 255)
-TEXT_COL = (90, 85, 78, 255)
-DIM_COL = (160, 155, 148, 255)
-
-# comment for light theme
-BG = (18, 18, 22, 255)
-WORLD_BG = (28, 28, 35, 255)
-ENV_BG = (22, 22, 30, 255)
-FOOD_COL = (80, 60, 60, 150)
-SNAKE_BODY = (70, 80, 95, 255)
-SNAKE_HEAD = (100, 115, 135, 255)
+BG = (13, 13, 20, 255)
+WORLD_BG = (26, 26, 46, 255)
+ENV_BG = (18, 18, 42, 255)
+FOOD_COL = (231, 76, 60, 200)
+SNAKE_BODY = (26, 92, 58, 255)
+SNAKE_HEAD = (39, 174, 96, 255)
 TEXT_COL = (200, 198, 190, 255)
 DIM_COL = (90, 88, 82, 255)
 
+BOT_BODY = (46, 74, 110, 255)
+BOT_HEAD = (61, 100, 148, 255)
 
 def restart(sim: pyslither.Simulation):
     sim.reset()
@@ -37,19 +30,32 @@ def restart(sim: pyslither.Simulation):
         rand_d = sim.spawn_radius * np.sqrt(np.random.random())
         x = sim.config.radius + rand_d * np.cos(rand_ang)
         y = sim.config.radius + rand_d * np.sin(rand_ang)
-
         sim.new_snake(x, y, np.random.random() * np.pi * 2)
 
-    for i in range(0, 2048):
+    for i in range(0, 200):
         rand_ang = np.random.random() * np.pi * 2
-        rand_d = sim.spawn_radius * np.sqrt(np.random.random())
+        rand_d = sim.safe_radius * np.sqrt(np.random.random())
         x = sim.config.radius + rand_d * np.cos(rand_ang)
         y = sim.config.radius + rand_d * np.sin(rand_ang)
         v = np.random.uniform(3, 8)
         sim.new_food(x, y, v)
 
+    sim.user_data["killed"] = False
 
-sim = pyslither.Simulation(radius=5000, max_snakes=32)
+def snake_killed(sim: pyslither.Simulation, killed: int, killer: int):
+    if killed == MY_SNAKE:
+        sim.user_data["killed"] = True
+
+
+sim = pyslither.Simulation(
+    radius=1000,
+    max_snakes=5,
+    user_data={"dead": False},
+    # optional callbacks
+    callbacks={
+        Event.SnakeKilled: snake_killed,
+    },
+)
 
 restart(sim)
 
@@ -63,13 +69,14 @@ FONT_SIZE = font.baseSize
 cam = rl.Camera2D((WW * 0.5, WH * 0.5), (sim.config.radius, sim.config.radius), 0, 0.5)
 
 while not rl.window_should_close():
+    dt = rl.get_frame_time()
+
     rl.begin_drawing()
     rl.clear_background(BG)
 
     wheel = rl.get_mouse_wheel_move()
     if wheel != 0:
-        zoom_factor = 1.1
-        cam.zoom *= np.pow(zoom_factor, wheel)
+        cam.zoom *= np.pow(1.1, wheel)
 
     mw = rl.get_screen_to_world_2d(rl.get_mouse_position(), cam)
     ta = np.atan2(mw.y - cam.target.y, mw.x - cam.target.x)
@@ -79,33 +86,27 @@ while not rl.window_should_close():
     sim.set_snake_target_angle(ta, MY_SNAKE)
 
     if rl.is_mouse_button_pressed(rl.MouseButton.MOUSE_BUTTON_LEFT):
-        sim.set_snake_boost(1, MY_SNAKE)
+        sim.set_snake_boost(True, MY_SNAKE)
     elif rl.is_mouse_button_released(rl.MouseButton.MOUSE_BUTTON_LEFT):
-        sim.set_snake_boost(0, MY_SNAKE)
-
-    for i, (target_angle, dead) in enumerate(
-        zip(sim.snake_target_angles, sim.snake_states)
-    ):
-        if i == 0:
-            continue
-
-        if not dead:
+        sim.set_snake_boost(False, MY_SNAKE)
+    
+    for i, target_angle in enumerate(sim.snake_target_angles):
+        if i != 0:
             rand_drift = (np.random.random() - 0.5) * 0.5
             sim.set_snake_target_angle((target_angle + rand_drift) % (2 * np.pi), i)
 
             dx = sim.config.radius - sim.get_snake_head_x(i)
             dy = sim.config.radius - sim.get_snake_head_y(i)
-
             d2 = dx * dx + dy * dy
             sr = sim.safe_radius * 0.9
 
             if d2 > sr * sr:
                 sim.set_snake_target_angle(np.atan2(dy, dx), i)
 
-    dtms = (rl.get_frame_time() * 1000) / pyslither.MS_PER_TICK
+    dtms = (dt * 1000) / pyslither.MS_PER_TICK
     sim.tick(dtms)
 
-    if sim.snake_states[MY_SNAKE]:
+    if sim.user_data["killed"]:
         restart(sim)
 
     cam.target.x = sim.get_snake_head_x(MY_SNAKE)
@@ -121,26 +122,25 @@ while not rl.window_should_close():
     for fx, fy, fv in zip(sim.food_xs, sim.food_ys, sim.food_values):
         rl.draw_circle_v((fx, fy), fv, FOOD_COL)
 
-    for i, (dead, radius, num_parts) in enumerate(
-        zip(
-            sim.snake_states,
-            sim.snake_radii,
-            sim.snake_part_counts,
-        )
+    for i, (radius, num_parts) in enumerate(
+        zip(sim.snake_radii, sim.snake_part_counts)
     ):
-        if not dead:
-            lx = hx = sim.get_snake_head_x(i)
-            ly = hy = sim.get_snake_head_y(i)
-            srx2 = radius + radius
+        is_player = i == MY_SNAKE
+        body_col = SNAKE_BODY if is_player else BOT_BODY
+        head_col = SNAKE_HEAD if is_player else BOT_HEAD
 
-            for j in range(num_parts):
-                px = sim.get_snake_part_x(i, j)
-                py = sim.get_snake_part_y(i, j)
-                rl.draw_line_ex((lx, ly), (px, py), srx2, SNAKE_BODY)
-                lx, ly = px, py
-                rl.draw_circle_v((px, py), radius, SNAKE_BODY)
+        lx = hx = sim.get_snake_head_x(i)
+        ly = hy = sim.get_snake_head_y(i)
+        srx2 = radius + radius
 
-            rl.draw_circle_v((hx, hy), radius, SNAKE_HEAD)
+        for j in range(num_parts):
+            px = sim.get_snake_part_x(i, j)
+            py = sim.get_snake_part_y(i, j)
+            rl.draw_line_ex((lx, ly), (px, py), srx2, body_col)
+            lx, ly = px, py
+            rl.draw_circle_v((px, py), radius, body_col)
+
+        rl.draw_circle_v((hx, hy), radius, head_col)
 
     rl.end_mode_2d()
 

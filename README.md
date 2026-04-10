@@ -3,11 +3,21 @@
 </p>
 
 ---
-**Pyslither** is a high-performance native-backed simulation environment inspired by *Slither.io*, built primarily for **reinforcement learning** research and education. The core is written in C and conveniently exposed to Python. This means you get **NumPy-compatible** state arrays, a clean Python API, and the performance to run thousands of ticks per second without Python ever becoming the bottleneck.
+**Pyslither** is a high-performance, fully configurable continuous simulation environment inspired by *Slither.io*, designed for reinforcement learning research and education. The core engine is written in C and exposed to Python via a lightweight binding layer, delivering the throughput to run thousands of ticks per second without Python becoming the bottleneck. Observations are returned as standard NumPy arrays through a clean Python API.
 
-Snakes move, boost, collide, eat food, and die - all simulated at a timestep you control. Multiple snakes can coexist in the same environment, making **pyslither** suitable for single-agent, multi-agent, and self-play training setups alike.
+Snakes move, boost, collide, eat food, and die - all simulated at a timestep you control. Multiple snakes can coexist in the same environment, supporting single-agent, multi-agent, and self-play training setups.
 
-Take a look at the [examples](./examples) to understand how to integrate with reinforcement learning libraries like **Gymnasium** and **Stable-Baselines3** as well as how to use the API to retrieve needed information from the simulation.
+---
+
+**Callbacks & event hooks**
+
+The library exposes callbacks that fire at key simulation events. Callbacks receive the full environment state, making them useful for custom metric logging, curriculum scheduling, or reward shaping without modifying core simulation code.
+
+---
+
+**Library compatibility**
+
+The environment interface follows Gymnasium conventions, so integration with existing training loops requires minimal setup. Observations are plain NumPy arrays, actions use standard formats, and rewards are straightforward to customize. It works with Stable-Baselines3, RLlib, CleanRL, TorchRL, and custom loops written in PyTorch or JAX with no required framework dependencies.
 
 ## Installation
 ```bash
@@ -17,20 +27,18 @@ pip install -e ".[examples]"
 ## Usage
 ```python
 import pyslither
+import numpy as np
 
 sim = pyslither.Simulation()
 sim.new_snake(x, y, angle)
 sim.new_food(fx, fy, value)
 
 for i in range(0, 2048):
-    sim.tick(1.0)
-
-    for j, (dead, angle) in enumerate(zip(sim.snake_states, sim.snake_angles)):
-        if dead:
-            continue
-
+    for j, angle in enumerate(sim.snake_angles):
         sim.set_snake_target_angle((angle + np.random.random()) % (np.pi * 2), j)
         sim.set_snake_boost(np.random.choice([True, False]), j)
+
+    sim.tick(1.0)
 
 print(f"total snakes = {sim.num_snakes}")
 print(f"total food = {sim.num_food}")

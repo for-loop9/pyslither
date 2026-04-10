@@ -1,3 +1,4 @@
+#include <pybind11/native_enum.h>
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
@@ -11,19 +12,74 @@ extern "C" {
 #include "env.h"
 #include "util/tdarray.h"
 }
-
 namespace py = pybind11;
 
+#define ENV_CALLBACKS(X)                    \
+  X(SnakeKilled, on_kill, (int, int))       \
+  X(FoodEaten, on_eat, (int, int))          \
+  X(SnakeGrowth, on_growth, (int))          \
+  X(SnakeShift, on_move, (int, bool))       \
+  X(LosePart, on_lpart, (int))              \
+  X(BoostFoodSpawn, on_bfspawn, (int, int)) \
+  X(DeathFoodSpawn, on_dfspawn, (int, int, int))
+
+#define CB_ENUM_VALUE(Event, member, args) Event,
+enum class CallbackEvent { ENV_CALLBACKS(CB_ENUM_VALUE) Count };
+#undef CB_ENUM_VALUE
+
+#define CB_FIELD(Event, member, args) \
+  std::function<void(env*, CB_UNPACK args)> member;
+#define CB_UNPACK(...) __VA_ARGS__
+
+struct PyEnvCallbacks {
+  py::object user_data;
+  ENV_CALLBACKS(CB_FIELD)
+};
+#undef CB_FIELD
+
+template <auto Member, typename... Args>
+void py_dispatch(env* e, Args... args) {
+  py::gil_scoped_acquire gil;
+  auto* cb = static_cast<PyEnvCallbacks*>(e->user_data);
+  (cb->*Member)(e, args...);
+}
+
+template <auto Member, typename CFn, typename PyFn>
+void register_callback(env* e, PyEnvCallbacks* cb, PyFn&& fn, CFn env::* slot,
+                       CFn dispatcher) {
+  if (fn) {
+    cb->*Member = std::forward<PyFn>(fn);
+    e->*slot = dispatcher;
+  } else {
+    e->*slot = nullptr;
+  }
+}
+
 struct EnvDeleter {
-  void operator()(env* e) const { env_destroy(e); }
+  void operator()(env* e) const {
+    py::gil_scoped_acquire gil;
+    delete static_cast<PyEnvCallbacks*>(e->user_data);
+    env_destroy(e);
+  }
 };
 
 using env_ptr = std::unique_ptr<env, EnvDeleter>;
 
+#define CB_NULL_INIT(Event, member, args) e->member = nullptr;
+
+#define CB_DISPATCH_CASE(Event, member, args)                  \
+  case CallbackEvent::Event: {                                 \
+    auto fn_obj = item.second.cast<py::function>();            \
+    std::function<void(env*, CB_UNPACK args)> fn = fn_obj;     \
+    register_callback<&PyEnvCallbacks::member>(                \
+        e.get(), cb, fn, &env::member,                         \
+        py_dispatch<&PyEnvCallbacks::member, CB_UNPACK args>); \
+  } break;
+
+#define CB_ENUM_EXPORT(Event, member, args) .value(#Event, CallbackEvent::Event)
+
 PYBIND11_MODULE(_core, m) {
-  m.doc() =
-      "Python bindings for the Slither.io-style simulation "
-      "environment.";
+  m.doc() = "Python bindings for the Slither.io-style simulation environment.";
 
   py::class_<env::env_cfg>(
       m, "Config", "Simulation configuration. Set via Simulation constructor.")
@@ -39,11 +95,52 @@ PYBIND11_MODULE(_core, m) {
       .def_readonly("max_parts", &env::env_cfg::mp)
       .def_readonly("max_snakes", &env::env_cfg::msn);
 
+  py::native_enum<CallbackEvent>(
+      m, "Event", "enum.IntEnum",
+      "Events that trigger user-defined callbacks in the simulation.\n"
+      "\n"
+      "Attributes\n"
+      "----------\n"
+      "SnakeKilled\n"
+      "    Fired when a snake is killed:\n"
+      "    ``(sim, victim, killer)``, where ``victim``\n"
+      "    is the victim snake's index, and ``killer`` is either the killer "
+      "snake's index or ``-1``"
+      "    if victim is killed by border.\n"
+      "FoodEaten\n"
+      "    Fired when a snake eats a food:\n"
+      "    ``(sim, snake, food)``, where ``eater`` is\n"
+      "    the eating snake's index and ``food`` is the consumed food's "
+      "index.\n"
+      "SnakeGrowth\n"
+      "    Fired when a snake's fractional growth changes:\n"
+      "    ``(sim, snake)``, where ``snake`` is the snake's index.\n"
+      "SnakeShift\n"
+      "    Fired when a snake's body parts shift (when snake moves "
+      "``config.segment_length`` units):\n"
+      "    ``(sim, snake, new_part)``, where ``snake`` is the snake's index, "
+      "and ``new_part`` is whether the snake gained a new body part or not.\n"
+      "LosePart\n"
+      "    Fired when a snake loses a body part:\n"
+      "    ``(sim, snake)``, where ``snake`` is the snake's index.\n"
+      "BoostFoodSpawn\n"
+      "    Fired when a food is spawned due to boost:\n"
+      "    ``(sim, food, snake)``, where ``food`` is the food's index and "
+      "``snake`` is the snake's index.\n"
+      "DeathFoodSpawn\n"
+      "    Fired when food spawns due to a snake's death:\n"
+      "    ``(sim, food, num_food, snake)``, where ``food`` is the food's "
+      "starting index, ``num_food`` is the total number of foods spawned due "
+      "to death, and ``snake`` is the snake's index.\n"
+      "\n") ENV_CALLBACKS(CB_ENUM_EXPORT)
+      .finalize();
+
   py::class_<env, env_ptr>(m, "Simulation")
       .def(py::init([](float rad, float bs, float str, float ms, float ts,
-                       float tsr, float msr, float mrr, int sl, int mp,
-                       int msn) {
+                       float tsr, float msr, float mrr, int sl, int mp, int msn,
+                       py::object user_data, py::dict callbacks) {
              auto e = env_ptr(new env());
+             auto* cb = new PyEnvCallbacks();
 
              e->cfg.rad = rad;
              e->cfg.bs = bs;
@@ -57,14 +154,23 @@ PYBIND11_MODULE(_core, m) {
              e->cfg.mp = mp;
              e->cfg.msn = msn;
 
+             cb->user_data = user_data;
+             e->user_data = cb;
+
+             ENV_CALLBACKS(CB_NULL_INIT)
+
+             for (auto item : callbacks) {
+               CallbackEvent ev = item.first.cast<CallbackEvent>();
+               switch (ev) { ENV_CALLBACKS(CB_DISPATCH_CASE) }
+             }
+
              if (!env_init(e.get())) {
                printf(
-                   "Environment initialization failed: number of maximum parts "
-                   "exceeds %d.\n",
+                   "Environment initialization failed: number of maximum "
+                   "parts exceeds %d.\n",
                    MAX_PARTS);
                exit(-1);
              }
-
              return e;
            }),
            py::arg("radius") = 5000.0f, py::arg("base_speed") = 5.39f,
@@ -72,7 +178,20 @@ PYBIND11_MODULE(_core, m) {
            py::arg("turn_speed") = 0.033f, py::arg("tail_stiffness") = 0.43f,
            py::arg("mouth_speed") = 0.208f, py::arg("mouth_radius") = 40.0f,
            py::arg("segment_length") = 42, py::arg("max_parts") = 450,
-           py::arg("max_snakes") = 32)
+           py::arg("max_snakes") = 32, py::arg("user_data") = py::none(),
+           py::arg("callbacks") = py::dict())
+
+      .def_property(
+          "user_data",
+          [](env* e) -> py::object {
+            auto* cb = static_cast<PyEnvCallbacks*>(e->user_data);
+            return cb->user_data;
+          },
+          [](env* e, py::object obj) {
+            auto* cb = static_cast<PyEnvCallbacks*>(e->user_data);
+            cb->user_data = obj;
+          },
+          "User data.")
 
       .def_readonly("config", &env::cfg)
 
@@ -83,8 +202,8 @@ PYBIND11_MODULE(_core, m) {
            "to " TOSTRING(MS_PER_TICK) " ms**.")
       .def("new_snake", &env_new_snake, py::arg("x"), py::arg("y"),
            py::arg("angle"),
-           "Spawn a snake at (`x`, `y`) with `angle` in radians (`0` to "
-           "`2pi`). Returns `False` if the position is "
+           "Spawn a snake at (`x`, `y`) with `angle` in radians (``0`` to "
+           "``2pi``). Returns `False` if the position is "
            "outside the spawn radius, occupied, or the max snake count is "
            "reached.")
       .def("new_food", &env_new_food, py::arg("x"), py::arg("y"),
@@ -96,38 +215,36 @@ PYBIND11_MODULE(_core, m) {
           "set_snake_target_angle",
           [](env* e, float ang, int i) { e->snake.tang[i] = ang; },
           py::arg("angle"), py::arg("i"),
-          "Set the desired heading for snake `i` in radians (`0` to `2pi`).")
+          "Set the desired heading for snake ``i`` in radians (``0`` to "
+          "``2pi``).")
       .def(
           "set_snake_boost", [](env* e, bool b, int i) { e->snake.b[i] = b; },
           py::arg("boost"), py::arg("i"),
-          "Enable or disable boosting for snake `i`.")
+          "Enable or disable boosting for snake ``i``.")
 
       .def_property_readonly(
-          "num_snakes",
-          [](env* e) {
-            return tdarray_length(e->snake.t) - _tdarray_length(e->csnake.dead);
-          },
+          "num_snakes", [](env* e) { return tdarray_length(e->snake.t); },
           "Total number of snakes alive.")
       .def(
           "get_snake_head_x", [](env* e, int i) { return SPOS_X(e->snake, i); },
-          py::arg("i"), "X coordinate of snake `i`'s head.")
+          py::arg("i"), "X coordinate of snake ``i``'s head.")
       .def(
           "get_snake_head_y", [](env* e, int i) { return SPOS_Y(e->snake, i); },
-          py::arg("i"), "Y coordinate of snake `i`'s head.")
+          py::arg("i"), "Y coordinate of snake ``i``'s head.")
       .def(
           "get_snake_part_x",
           [](env* e, int i, int j) {
             return e->snake.px[i][1 + ((e->snake.hi[i] - j) & MAX_PARTS_MASK)];
           },
           py::arg("i"), py::arg("j"),
-          "X coordinate of body part `j` of snake `i`.")
+          "X coordinate of body part ``j`` of snake ``i``.")
       .def(
           "get_snake_part_y",
           [](env* e, int i, int j) {
             return e->snake.py[i][1 + ((e->snake.hi[i] - j) & MAX_PARTS_MASK)];
           },
           py::arg("i"), py::arg("j"),
-          "Y coordinate of body part `j` of snake `i`.")
+          "Y coordinate of body part ``j`` of snake ``i``.")
       .def_property_readonly(
           "snake_angles",
           [](env* e) {
@@ -143,6 +260,13 @@ PYBIND11_MODULE(_core, m) {
           },
           "Target angles of all snakes.")
       .def_property_readonly(
+          "snake_growths",
+          [](env* e) {
+            float* ptr = e->snake.g;
+            return py::array_t<float>(tdarray_length(ptr), ptr);
+          },
+          "Fractional growth values of all snakes.")
+      .def_property_readonly(
           "snake_speeds",
           [](env* e) {
             float* ptr = e->snake.sp;
@@ -153,7 +277,7 @@ PYBIND11_MODULE(_core, m) {
           "get_snake_length",
           [](env* e, int i) { return e->snake.np[i] + e->snake.g[i]; },
           py::arg("i"),
-          "Effective length of snake `i` (number of parts + fractional "
+          "Effective length of snake ``i`` (number of parts + fractional "
           "growth).")
       .def_property_readonly(
           "snake_ids",
@@ -185,21 +309,6 @@ PYBIND11_MODULE(_core, m) {
                 {sizeof(int)}, true);
           },
           "Part counts of all snakes.")
-      .def_property_readonly(
-          "snake_states",
-          [](env* e) {
-            int* ptr = e->snake.state;
-            ssize_t n = tdarray_length(ptr);
-            return py::memoryview::from_buffer(
-                ptr, sizeof(int), py::format_descriptor<int>::value, {n},
-                {sizeof(int)}, true);
-          },
-          R"doc(
-            States of all snakes.
-                `0`: Alive
-                `1`: Killed by snake
-                `2`: Killed by border
-            )doc")
       .def_property_readonly(
           "snake_radii",
           [](env* e) {
@@ -239,29 +348,29 @@ PYBIND11_MODULE(_core, m) {
           [](env* e, int i) {
             return e->snake.px[e->csnake.sidx[i]][e->csnake.s0[i]];
           },
-          py::arg("i"), "Start X of collision segment `i`.")
+          py::arg("i"), "Start X of collision segment ``i``.")
       .def(
           "get_segment_y0",
           [](env* e, int i) {
             return e->snake.py[e->csnake.sidx[i]][e->csnake.s0[i]];
           },
-          py::arg("i"), "Start Y of collision segment `i`.")
+          py::arg("i"), "Start Y of collision segment ``i``.")
       .def(
           "get_segment_x1",
           [](env* e, int i) {
             return e->snake.px[e->csnake.sidx[i]][e->csnake.s1[i]];
           },
-          py::arg("i"), "End X of collision segment `i`.")
+          py::arg("i"), "End X of collision segment ``i``.")
       .def(
           "get_segment_y1",
           [](env* e, int i) {
             return e->snake.py[e->csnake.sidx[i]][e->csnake.s1[i]];
           },
-          py::arg("i"), "End Y of collision segment `i`.")
+          py::arg("i"), "End Y of collision segment ``i``.")
       .def(
           "get_segment_snake_idx",
           [](env* e, int i) { return e->csnake.sidx[i]; }, py::arg("i"),
-          "Index of the snake that owns segment `i`.")
+          "Index of the snake that owns segment ``i``.")
 
       .def(
           "get_segment_cell",
@@ -286,7 +395,7 @@ PYBIND11_MODULE(_core, m) {
                 ptr, sizeof(int), py::format_descriptor<int>::value, {n},
                 {sizeof(int)}, true);
           },
-          py::arg("i"), "Segment indices in collision grid cell `i`.")
+          py::arg("i"), "Segment indices in collision grid cell ``i``.")
       .def(
           "get_food_cell",
           [](env* e, float x, float y) {
@@ -310,7 +419,7 @@ PYBIND11_MODULE(_core, m) {
                 ptr, sizeof(int), py::format_descriptor<int>::value, {n},
                 {sizeof(int)}, true);
           },
-          py::arg("i"), "Food indices in food collision grid cell `i`.")
+          py::arg("i"), "Food indices in food collision grid cell ``i``.")
 
       .def_property_readonly("segment_grid_size",
                              [](env* e) { return e->csnake.gsz; })

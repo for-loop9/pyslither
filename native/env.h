@@ -103,11 +103,11 @@ typedef struct env {
     body_parts* px;
     body_parts* py;
 
-    int* b;
+    bool* b;
+    bool* state;
     int* hi;
     int* np;
     int* dir;
-    int* state;
     int* kc;
     int* id;
 
@@ -127,6 +127,17 @@ typedef struct env {
     float* v;
     int* ci;
   } food;
+
+  void* user_data;
+
+  void (*on_kill)(struct env*, int, int);
+  void (*on_eat)(struct env*, int, int);
+  void (*on_growth)(struct env*, int);
+  void (*on_lpart)(struct env*, int);
+  void (*on_move)(struct env*, int, bool);
+  void (*on_bfspawn)(struct env*, int, int);
+  void (*on_dfspawn)(struct env*, int, int, int);
+
 } env;
 
 bool env_init(env* e);
