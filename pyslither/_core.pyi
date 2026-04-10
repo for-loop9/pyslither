@@ -186,6 +186,11 @@ class Simulation:
     def food_grid_size(self) -> int:
         ...
     @property
+    def food_ids(self) -> memoryview:
+        """
+        Unique IDs of all food.
+        """
+    @property
     def food_values(self) -> numpy.typing.NDArray[numpy.float32]:
         """
         Values of all foods.

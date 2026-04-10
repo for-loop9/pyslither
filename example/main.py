@@ -63,7 +63,7 @@ rl.set_trace_log_level(rl.TraceLogLevel.LOG_ERROR)
 rl.init_window(WW, WH, "pyslither")
 rl.set_target_fps(125)
 
-font_file = HERE.parent / "res" / "jetbrains.ttf"
+font_file = HERE / "res" / "jetbrains.ttf"
 font = rl.load_font_ex(str(font_file), 20, None, 0)
 FONT_SIZE = font.baseSize
 cam = rl.Camera2D((WW * 0.5, WH * 0.5), (sim.config.radius, sim.config.radius), 0, 0.5)
@@ -119,7 +119,7 @@ while not rl.window_should_close():
     )
     rl.draw_circle_v((sim.config.radius, sim.config.radius), sim.safe_radius, ENV_BG)
 
-    for fx, fy, fv in zip(sim.food_xs, sim.food_ys, sim.food_values):
+    for fx, fy, fv, in zip(sim.food_xs, sim.food_ys, sim.food_values):
         rl.draw_circle_v((fx, fy), fv, FOOD_COL)
 
     for i, (radius, num_parts) in enumerate(

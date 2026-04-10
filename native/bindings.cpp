@@ -342,7 +342,16 @@ PYBIND11_MODULE(_core, m) {
             return py::array_t<float>(tdarray_length(ptr), ptr);
           },
           "Values of all foods.")
-
+      .def_property_readonly(
+          "food_ids",
+          [](env* e) {
+            int* ptr = e->food.id;
+            ssize_t n = tdarray_length(ptr);
+            return py::memoryview::from_buffer(
+                ptr, sizeof(int), py::format_descriptor<int>::value, {n},
+                {sizeof(int)}, true);
+          },
+          "Unique IDs of all food.")
       .def(
           "get_segment_x0",
           [](env* e, int i) {

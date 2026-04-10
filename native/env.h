@@ -59,8 +59,10 @@ typedef struct env {
 
     int sl2;
 
-    int* ids;
-    int cid;
+    int* sids;
+    int* fids;
+    int scid;
+    int fcid;
 
     float srad;
     float srad2;
@@ -126,6 +128,7 @@ typedef struct env {
     float* y;
     float* v;
     int* ci;
+    int* id;
   } food;
 
   void* user_data;

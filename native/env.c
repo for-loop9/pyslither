@@ -144,12 +144,14 @@ bool env_init(env* e) {
   e->snake.py = tdarray_create(body_parts, 8);
   e->snake.id = tdarray_create(int, 8);
 
-  e->dat.ids = tdarray_create(int, 8);
+  e->dat.sids = tdarray_create(int, 8);
+  e->dat.fids = tdarray_create(int, 8);
 
   e->food.x = tdarray_create(float, 8);
   e->food.y = tdarray_create(float, 8);
   e->food.v = tdarray_create(float, 8);
   e->food.ci = tdarray_create(int, 8);
+  e->food.id = tdarray_create(int, 8);
 
   e->csnake.sidx = tdarray_create(int, 8);
   e->csnake.s0 = tdarray_create(int, 8);
@@ -179,6 +181,7 @@ void env_destroy(env* e) {
   tdarray_destroy(e->food.y);
   tdarray_destroy(e->food.v);
   tdarray_destroy(e->food.ci);
+  tdarray_destroy(e->food.id);
 
   tdarray_destroy(e->snake.sin);
   tdarray_destroy(e->snake.cos);
@@ -207,7 +210,8 @@ void env_destroy(env* e) {
   tdarray_destroy(e->snake.py);
   tdarray_destroy(e->snake.id);
 
-  tdarray_destroy(e->dat.ids);
+  tdarray_destroy(e->dat.sids);
+  tdarray_destroy(e->dat.fids);
 
   int cells = e->csnake.gsz * e->csnake.gsz;
 
@@ -250,6 +254,15 @@ bool env_new_food(env* e, float x, float y, float v) {
   tdarray_push(&e->food.v, &v);
 
   env_grid_insert_food(e, i);
+
+  int nids = tdarray_length(e->dat.fids);
+  if (nids) {
+    tdarray_push(&e->food.id, &e->dat.fids[nids - 1]);
+    tdarray_pop(e->dat.fids);
+  } else {
+    int id = e->dat.fcid++;
+    tdarray_push(&e->food.id, &id);
+  }
 
   return true;
 }
@@ -410,6 +423,7 @@ static inline void env_grid_insert_segment(struct env* e, int i, int s0,
 }
 
 static inline void env_remove_food(env* e, int i) {
+  tdarray_push(&e->dat.fids, &e->food.id[i]);
   int last = tdarray_length(e->food.x) - 1;
 
   int gx = e->food.x[i] * e->cfood.icsz;
@@ -430,6 +444,7 @@ static inline void env_remove_food(env* e, int i) {
     e->food.y[i] = e->food.y[last];
     e->food.v[i] = e->food.v[last];
     e->food.ci[i] = e->food.ci[last];
+    e->food.id[i] = e->food.id[last];
 
     int lgx = e->food.x[i] * e->cfood.icsz;
     int lgy = e->food.y[i] * e->cfood.icsz;
@@ -443,10 +458,11 @@ static inline void env_remove_food(env* e, int i) {
   tdarray_pop(e->food.y);
   tdarray_pop(e->food.v);
   tdarray_pop(e->food.ci);
+  tdarray_pop(e->food.id);
 }
 
 static inline void env_remove_snake(env* e, int i) {
-  tdarray_push(&e->dat.ids, &e->snake.id[i]);
+  tdarray_push(&e->dat.sids, &e->snake.id[i]);
   int last = tdarray_length(e->snake.t) - 1;
 
   if (i != last) {
@@ -716,10 +732,12 @@ void env_reset(env* e) {
   tdarray_clear(e->food.y);
   tdarray_clear(e->food.v);
   tdarray_clear(e->food.ci);
-  tdarray_clear(e->dat.ids);
+  tdarray_clear(e->dat.sids);
+  tdarray_clear(e->dat.fids);
   tdarray_clear(e->csnake.dead);
 
-  e->dat.cid = 0;
+  e->dat.scid = 0;
+  e->dat.fcid = 0;
   e->dat.ctm = 0;
 }
 
@@ -779,12 +797,12 @@ bool env_new_snake(env* e, float x, float y, float ang) {
   tdarray_push(&e->snake.px, ((body_parts[]){0}));
   tdarray_push(&e->snake.py, ((body_parts[]){0}));
 
-  int nids = tdarray_length(e->dat.ids);
+  int nids = tdarray_length(e->dat.sids);
   if (nids) {
-    tdarray_push(&e->snake.id, &e->dat.ids[nids - 1]);
-    tdarray_pop(e->dat.ids);
+    tdarray_push(&e->snake.id, &e->dat.sids[nids - 1]);
+    tdarray_pop(e->dat.sids);
   } else {
-    int id = e->dat.cid++;
+    int id = e->dat.scid++;
     tdarray_push(&e->snake.id, &id);
   }
 
