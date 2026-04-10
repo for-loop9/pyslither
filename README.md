@@ -3,7 +3,7 @@
 </p>
 
 ---
-**Pyslither** is a high-performance, fully configurable continuous simulation environment inspired by *Slither.io*, primarily built for reinforcement learning research. The core engine is written in C and exposed to Python via a lightweight binding layer, delivering the throughput to run thousands of ticks per second without Python becoming the bottleneck. Observations are returned as standard NumPy arrays through a clean Python API.
+**Pyslither** is a high-performance, fully configurable continuous simulation environment inspired by *Slither.io*, primarily built for **reinforcement learning** research. The core engine is written in C and exposed to Python via a lightweight binding layer, delivering the throughput to run thousands of ticks per second without Python becoming the bottleneck. Observations are returned as standard NumPy arrays through a clean Python API.
 
 Snakes move, boost, collide, eat food, and die - all simulated at a timestep you control. Multiple snakes can coexist in the same environment, supporting single-agent, multi-agent, and self-play training setups.
 
