@@ -60,6 +60,7 @@ sim = pyslither.Simulation(
 restart(sim)
 
 rl.set_trace_log_level(rl.TraceLogLevel.LOG_ERROR)
+rl.set_config_flags(rl.ConfigFlags.FLAG_MSAA_4X_HINT)
 rl.init_window(WW, WH, "pyslither")
 rl.set_target_fps(125)
 
