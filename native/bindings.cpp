@@ -210,18 +210,6 @@ PYBIND11_MODULE(_core, m) {
            py::arg("value"),
            "Place food at (`x`, `y`) with the given value. Returns `False` if "
            "outside the safe radius.")
-
-      .def(
-          "set_snake_target_angle",
-          [](env* e, float ang, int i) { e->snake.tang[i] = ang; },
-          py::arg("angle"), py::arg("i"),
-          "Set the desired heading for snake ``i`` in radians (``0`` to "
-          "``2pi``).")
-      .def(
-          "set_snake_boost", [](env* e, bool b, int i) { e->snake.b[i] = b; },
-          py::arg("boost"), py::arg("i"),
-          "Enable or disable boosting for snake ``i``.")
-
       .def_property_readonly(
           "num_snakes", [](env* e) { return tdarray_length(e->snake.t); },
           "Total number of snakes alive.")
@@ -256,9 +244,16 @@ PYBIND11_MODULE(_core, m) {
           "snake_target_angles",
           [](env* e) {
             float* ptr = e->snake.tang;
-            return py::array_t<float>(tdarray_length(ptr), ptr);
+            return py::array_t<float>(tdarray_length(ptr), ptr, py::cast(e));
           },
-          "Target angles of all snakes.")
+          "Target angles of all snakes **(Writeable)**.")
+      .def_property_readonly(
+          "snake_boosts",
+          [](env* e) {
+            bool* ptr = e->snake.b;
+            return py::array_t<bool>(tdarray_length(ptr), ptr, py::cast(e));
+          },
+          "Boost flags of all snakes **(Writeable)**.")
       .def_property_readonly(
           "snake_growths",
           [](env* e) {

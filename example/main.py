@@ -83,17 +83,17 @@ while not rl.window_should_close():
     if ta < 0:
         ta += np.pi * 2
 
-    sim.set_snake_target_angle(ta, MY_SNAKE)
+    sim.snake_target_angles[MY_SNAKE] = ta
 
     if rl.is_mouse_button_pressed(rl.MouseButton.MOUSE_BUTTON_LEFT):
-        sim.set_snake_boost(True, MY_SNAKE)
+        sim.snake_boosts[MY_SNAKE] = True
     elif rl.is_mouse_button_released(rl.MouseButton.MOUSE_BUTTON_LEFT):
-        sim.set_snake_boost(False, MY_SNAKE)
+        sim.snake_boosts[MY_SNAKE] = False
     
     for i, target_angle in enumerate(sim.snake_target_angles):
-        if i != 0:
+        if i != MY_SNAKE:
             rand_drift = (np.random.random() - 0.5) * 0.5
-            sim.set_snake_target_angle((target_angle + rand_drift) % (2 * np.pi), i)
+            sim.snake_target_angles[i] = (target_angle + rand_drift) % (2 * np.pi)
 
             dx = sim.config.radius - sim.get_snake_head_x(i)
             dy = sim.config.radius - sim.get_snake_head_y(i)
@@ -101,7 +101,7 @@ while not rl.window_should_close():
             sr = sim.safe_radius * 0.9
 
             if d2 > sr * sr:
-                sim.set_snake_target_angle(np.atan2(dy, dx), i)
+                sim.snake_target_angles[i] = np.atan2(dy, dx)
 
     dtms = (dt * 1000) / pyslither.MS_PER_TICK
     sim.tick(dtms)
@@ -119,7 +119,7 @@ while not rl.window_should_close():
     )
     rl.draw_circle_v((sim.config.radius, sim.config.radius), sim.safe_radius, ENV_BG)
 
-    for fx, fy, fv, in zip(sim.food_xs, sim.food_ys, sim.food_values):
+    for fx, fy, fv in zip(sim.food_xs, sim.food_ys, sim.food_values):
         rl.draw_circle_v((fx, fy), fv, FOOD_COL)
 
     for i, (radius, num_parts) in enumerate(

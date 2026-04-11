@@ -26,13 +26,13 @@ import pyslither
 import numpy as np
 
 sim = pyslither.Simulation()
-sim.new_snake(x, y, angle)
+sim.new_snake(sx, sy, angle)
 sim.new_food(fx, fy, value)
 
 for i in range(0, 2048):
     for j, angle in enumerate(sim.snake_angles):
-        sim.set_snake_target_angle((angle + np.random.random()) % (np.pi * 2), j)
-        sim.set_snake_boost(np.random.choice([True, False]), j)
+        sim.snake_target_angles[j] = (angle + np.random.random()) % (np.pi * 2)
+        sim.snake_boosts[j] = np.random.choice([True, False])
 
     sim.tick(1.0)
 

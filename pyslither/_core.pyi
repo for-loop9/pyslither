@@ -164,14 +164,6 @@ class Simulation:
         """
         Reset the environment.
         """
-    def set_snake_boost(self, boost: bool, i: typing.SupportsInt | typing.SupportsIndex) -> None:
-        """
-        Enable or disable boosting for snake ``i``.
-        """
-    def set_snake_target_angle(self, angle: typing.SupportsFloat | typing.SupportsIndex, i: typing.SupportsInt | typing.SupportsIndex) -> None:
-        """
-        Set the desired heading for snake ``i`` in radians (``0`` to ``2pi``).
-        """
     def tick(self, dtms: typing.SupportsFloat | typing.SupportsIndex) -> None:
         """
         Advance the simulation one step. `dtms` is elapsed time **normalized to 8 ms**.
@@ -236,6 +228,11 @@ class Simulation:
         Current angles (radians) of all snakes.
         """
     @property
+    def snake_boosts(self) -> numpy.typing.NDArray[numpy.bool]:
+        """
+        Boost flags of all snakes **(Writeable)**.
+        """
+    @property
     def snake_growths(self) -> numpy.typing.NDArray[numpy.float32]:
         """
         Fractional growth values of all snakes.
@@ -268,7 +265,7 @@ class Simulation:
     @property
     def snake_target_angles(self) -> numpy.typing.NDArray[numpy.float32]:
         """
-        Target angles of all snakes.
+        Target angles of all snakes **(Writeable)**.
         """
     @property
     def spawn_radius(self) -> float:
