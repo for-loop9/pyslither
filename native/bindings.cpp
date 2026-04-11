@@ -246,7 +246,7 @@ PYBIND11_MODULE(_core, m) {
             float* ptr = e->snake.tang;
             return py::array_t<float>(tdarray_length(ptr), ptr, py::cast(e));
           },
-          "Target angles of all snakes **(Writeable)**.")
+          "Target angles of all snakes in radians (``0`` to ``2pi``) **(Writeable)**.")
       .def_property_readonly(
           "snake_boosts",
           [](env* e) {

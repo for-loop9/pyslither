@@ -265,7 +265,7 @@ class Simulation:
     @property
     def snake_target_angles(self) -> numpy.typing.NDArray[numpy.float32]:
         """
-        Target angles of all snakes **(Writeable)**.
+        Target angles of all snakes in radians (``0`` to ``2pi``) **(Writeable)**.
         """
     @property
     def spawn_radius(self) -> float:
