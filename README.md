@@ -17,7 +17,7 @@ The environment interface follows Gymnasium conventions, so integration with exi
 
 ## Installation
 ```bash
-pip install -e ".[examples]"
+pip install -e ".[example]"
 ```
 
 ## Usage

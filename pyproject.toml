@@ -13,7 +13,7 @@ version = "0.1.0"
 dependencies = ["numpy"]
 
 [project.optional-dependencies]
-examples = ["raylib"]
+example = ["raylib"]
 
 [tool.setuptools.packages.find]
 include = ["pyslither*"]
