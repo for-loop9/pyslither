@@ -9,7 +9,7 @@ Snakes move, boost, collide, eat food, and die - all simulated at a timestep you
 
 **Callbacks & event hooks**
 
-The library exposes callbacks that fire at key simulation events. Callbacks receive the full environment state, making them useful for custom metric logging, curriculum scheduling, or reward shaping without modifying core simulation code.
+The library conveniently exposes callbacks that fire at key simulation events, making them useful for custom metric logging, curriculum scheduling, or reward shaping without modifying core simulation code.
 
 **Library compatibility**
 
