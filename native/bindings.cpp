@@ -203,12 +203,12 @@ PYBIND11_MODULE(_core, m) {
       .def("new_snake", &env_new_snake, py::arg("x"), py::arg("y"),
            py::arg("angle"),
            "Spawn a snake at (`x`, `y`) with `angle` in radians (``0`` to "
-           "``2pi``). Returns `False` if the position is "
+           "``2pi``). Returns snake index or `-1` if the position is "
            "outside the spawn radius, occupied, or the max snake count is "
            "reached.")
       .def("new_food", &env_new_food, py::arg("x"), py::arg("y"),
            py::arg("value"),
-           "Place food at (`x`, `y`) with the given value. Returns `False` if "
+           "Place food at (`x`, `y`) with the given value. Returns food index, or `-1` if "
            "outside the safe radius.")
       .def_property_readonly(
           "num_snakes", [](env* e) { return tdarray_length(e->snake.t); },

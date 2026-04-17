@@ -147,7 +147,7 @@ bool env_init(env* e);
 void env_destroy(env* e);
 void env_reset(env* e);
 void env_tick(env* e, float dtms);
-bool env_new_snake(env* e, float x, float y, float ang);
-bool env_new_food(env* e, float x, float y, float v);
+int env_new_snake(env* e, float x, float y, float ang);
+int env_new_food(env* e, float x, float y, float v);
 
 #endif

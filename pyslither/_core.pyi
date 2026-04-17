@@ -152,13 +152,13 @@ class Simulation:
         """
         Y coordinate of body part ``j`` of snake ``i``.
         """
-    def new_food(self, x: typing.SupportsFloat | typing.SupportsIndex, y: typing.SupportsFloat | typing.SupportsIndex, value: typing.SupportsFloat | typing.SupportsIndex) -> bool:
+    def new_food(self, x: typing.SupportsFloat | typing.SupportsIndex, y: typing.SupportsFloat | typing.SupportsIndex, value: typing.SupportsFloat | typing.SupportsIndex) -> int:
         """
-        Place food at (`x`, `y`) with the given value. Returns `False` if outside the safe radius.
+        Place food at (`x`, `y`) with the given value. Returns food index, or `-1` if outside the safe radius.
         """
-    def new_snake(self, x: typing.SupportsFloat | typing.SupportsIndex, y: typing.SupportsFloat | typing.SupportsIndex, angle: typing.SupportsFloat | typing.SupportsIndex) -> bool:
+    def new_snake(self, x: typing.SupportsFloat | typing.SupportsIndex, y: typing.SupportsFloat | typing.SupportsIndex, angle: typing.SupportsFloat | typing.SupportsIndex) -> int:
         """
-        Spawn a snake at (`x`, `y`) with `angle` in radians (``0`` to ``2pi``). Returns `False` if the position is outside the spawn radius, occupied, or the max snake count is reached.
+        Spawn a snake at (`x`, `y`) with `angle` in radians (``0`` to ``2pi``). Returns snake index or `-1` if the position is outside the spawn radius, occupied, or the max snake count is reached.
         """
     def reset(self) -> None:
         """

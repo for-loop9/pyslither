@@ -241,11 +241,11 @@ static inline void env_grid_insert_food(struct env* e, int i) {
   tdarray_push(&e->cfood.cgrd[h], &i);
 }
 
-bool env_new_food(env* e, float x, float y, float v) {
+int env_new_food(env* e, float x, float y, float v) {
   float dx = e->cfg.rad - x;
   float dy = e->cfg.rad - y;
   float d2 = dx * dx + dy * dy;
-  if (d2 >= e->dat.srad2) return false;
+  if (d2 >= e->dat.srad2) return -1;
 
   int i = tdarray_length(e->food.x);
 
@@ -264,7 +264,7 @@ bool env_new_food(env* e, float x, float y, float v) {
     tdarray_push(&e->food.id, &id);
   }
 
-  return true;
+  return i;
 }
 
 static inline void env_tick_movement(env* e, float dtms) {
@@ -747,9 +747,9 @@ void env_tick(env* e, float dtms) {
   e->dat.ctm += dtms * MS_PER_TICK;
 }
 
-bool env_new_snake(env* e, float x, float y, float ang) {
+int env_new_snake(env* e, float x, float y, float ang) {
   int i = tdarray_length(e->snake.t) - _tdarray_length(e->csnake.dead);
-  if (i == e->cfg.msn) return false;
+  if (i == e->cfg.msn) return -1;
 
   float cx = e->cfg.rad;
   float cy = e->cfg.rad;
@@ -758,7 +758,7 @@ bool env_new_snake(env* e, float x, float y, float ang) {
   float d2 = dx * dx + dy * dy;
 
   if (d2 >= e->dat.sprad2) {
-    return false;
+    return -1;
   }
 
   float s = fast_sinf(&e->dat, ang);
@@ -847,5 +847,5 @@ bool env_new_snake(env* e, float x, float y, float ang) {
 
   env_grid_insert_snake(e, i);
 
-  return true;
+  return i;
 }
