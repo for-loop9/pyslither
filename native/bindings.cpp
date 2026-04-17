@@ -161,7 +161,13 @@ PYBIND11_MODULE(_core, m) {
 
              for (auto item : callbacks) {
                CallbackEvent ev = item.first.cast<CallbackEvent>();
-               switch (ev) { ENV_CALLBACKS(CB_DISPATCH_CASE) }
+               switch (ev) {
+                 ENV_CALLBACKS(CB_DISPATCH_CASE)
+                 default:
+                   printf("Callback ID %d not supported.", (int)ev);
+                   exit(-1);
+                   break;
+               }
              }
 
              if (!env_init(e.get())) {
