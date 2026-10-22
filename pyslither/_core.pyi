@@ -56,8 +56,8 @@ class Event(enum.IntEnum):
         is the victim snake's index, and ``killer`` is either the killer snake's index or ``-1``    if victim is killed by border.
     FoodEaten
         Fired when a snake eats a food:
-        ``(sim, snake, food)``, where ``eater`` is
-        the eating snake's index and ``food`` is the consumed food's index.
+        ``(sim, food, snake)``, where ``food`` is the consumed food's
+        index and ``snake`` the eating snake's index.
     SnakeGrowth
         Fired when a snake's fractional growth changes:
         ``(sim, snake)``, where ``snake`` is the snake's index.
@@ -75,13 +75,13 @@ class Event(enum.IntEnum):
         ``(sim, food, num_food, snake)``, where ``food`` is the food's starting index, ``num_food`` is the total number of foods spawned due to death, and ``snake`` is the snake's index.
     
     """
-    BoostFoodSpawn: typing.ClassVar[Event]  # value = <Event.BoostFoodSpawn: 5>
-    DeathFoodSpawn: typing.ClassVar[Event]  # value = <Event.DeathFoodSpawn: 6>
-    FoodEaten: typing.ClassVar[Event]  # value = <Event.FoodEaten: 1>
-    LosePart: typing.ClassVar[Event]  # value = <Event.LosePart: 4>
-    SnakeGrowth: typing.ClassVar[Event]  # value = <Event.SnakeGrowth: 2>
-    SnakeKilled: typing.ClassVar[Event]  # value = <Event.SnakeKilled: 0>
-    SnakeShift: typing.ClassVar[Event]  # value = <Event.SnakeShift: 3>
+    BoostFoodSpawn: typing.ClassVar[Event]
+    DeathFoodSpawn: typing.ClassVar[Event]
+    FoodEaten: typing.ClassVar[Event]
+    LosePart: typing.ClassVar[Event]
+    SnakeGrowth: typing.ClassVar[Event]
+    SnakeKilled: typing.ClassVar[Event]
+    SnakeShift: typing.ClassVar[Event]
     @classmethod
     def __new__(cls, value):
         ...

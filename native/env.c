@@ -731,6 +731,7 @@ void env_reset(env* e) {
   tdarray_clear(e->food.x);
   tdarray_clear(e->food.y);
   tdarray_clear(e->food.v);
+  tdarray_clear(e->food.id);
   tdarray_clear(e->food.ci);
   tdarray_clear(e->dat.sids);
   tdarray_clear(e->dat.fids);
@@ -768,7 +769,7 @@ int env_new_snake(env* e, float x, float y, float ang) {
   int cell = gy * e->csnake.gsz + gx;
 
   if (tdarray_length(e->csnake.cgrd[cell])) {
-    return false;
+    return -1;
   }
 
   tdarray_push(&e->snake.sin, &s);
